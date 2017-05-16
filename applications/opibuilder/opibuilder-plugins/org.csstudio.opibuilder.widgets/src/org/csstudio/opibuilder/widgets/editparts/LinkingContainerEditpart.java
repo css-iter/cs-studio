@@ -56,11 +56,6 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
 
     private List<ConnectionModel> connectionList;
     private Map<ConnectionModel, PointList> originalPoints;
-    //location of right connector edge.
-    private int maxXpoint = 0;
-    private int maxYpoint = 0;
-    private int minXpoint = 0;
-    private int minYpoint = 0;
     private Point cropTranslation;
 
     @Override
@@ -169,57 +164,32 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
         return linkingContainerID.incrementAndGet();
     }
 
-
     /**
      * Automatically set the container size according its children's geography size.
      */
 
-//    @Override
-//    public void performAutosize(){
-//        updateConnectionList();
-//
-//        Rectangle childrenRange = GeometryUtil.getChildrenRange(this);
-//        //Point tranlateSize = new Point(childrenRange.x, childrenRange.y);
-//        log.fine(String.format("Childern range, top left coodrinates: x:%s, y:%s,  ", childrenRange.getTopLeft().x, childrenRange.getTopLeft().y ));
-//        log.fine(String.format("Childern range, bottom right coodrinates: x:%s, y:%s,  ", childrenRange.getBottomRight().x, childrenRange.getBottomRight().y ));
-//
-//
-//        setMixAndMaxEdgeValues(childrenRange.getBottomRight());
-//        setMixAndMaxEdgeValues(childrenRange.getTopLeft());
-//
-//       log.fine(String.format("Max conn points: x:%s, y:%s,  ",maxXpoint,maxYpoint ));
-//       log.fine(String.format("Min conn points: x:%s, y:%s,  ",minXpoint,minYpoint ));
-//
-//       //add extra 2px to connection points, so edge is more nice
-//       maxYpoint+=2;
-//       maxXpoint+=2;
-//
-//       getWidgetModel().setSize(maxXpoint, maxYpoint);
-//
-//
-//      /*  getWidgetModel().setSize(new Dimension(
-//                        childrenRange.width + figure.getInsets().left + figure.getInsets().right -20,
-//                        childrenRange.height + figure.getInsets().top + figure.getInsets().bottom -20)); */
-//
-//
-//        /* if (minXpoint < 0){
-//            getWidgetModel().setSize(maxXpoint + (-minXpoint)+200, maxYpoint); //the minXPoint is negative, so we actually add value;
-//        } */
-//
-//
-//
-//        for(Object editpart : getChildren()){
-//            AbstractWidgetModel widget = ((AbstractBaseEditPart)editpart).getWidgetModel();
-//            log.fine(String.format("Widget %s, coodrinates: x:%s, y:%s ", widget.getName(), widget.getLocation().x(), widget.getLocation().y() ));
-//
-//
-//
-//        //  widget.setLocation(widget.getLocation().translate(tranlateSize));
-//        }
-//
-//
-//    }
+    @Override
+    public void performAutosize() {
+        Rectangle childrenRange = GeometryUtil.getChildrenRange(this);
 
+        if (connectionList != null) {
+            for (ConnectionModel connModel : connectionList) {
+                final PointList connectionPoints = connModel.getPoints();
+                childrenRange.union(connectionPoints.getBounds());
+            }
+        }
+
+        cropTranslation = new Point(-childrenRange.x, -childrenRange.y);
+
+        getWidgetModel().setSize(new Dimension(
+                childrenRange.width + figure.getInsets().left + figure.getInsets().right,
+                childrenRange.height + figure.getInsets().top + figure.getInsets().bottom));
+
+        for (Object editPart : getChildren()) {
+            AbstractWidgetModel widget = ((AbstractBaseEditPart)editPart).getWidgetModel();
+            widget.setLocation(widget.getLocation().translate(cropTranslation));
+        }
+    }
 
     /**
      * Replace all macros in the name of the given path and construct a new path from the resolved name.
@@ -269,26 +239,11 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
             }
         });
 
-
-        connectionList = displayModel.getConnectionList();
-        if(!connectionList.isEmpty()){
-            if(originalPoints != null)
-                originalPoints.clear();
-            else
-                originalPoints = new HashMap<ConnectionModel, PointList>();
-        }
-
-        for (ConnectionModel conn : connectionList) {
-            conn.setLoadedFromLinkedOpi(true);
-            if(conn.getPoints()!=null)
-                originalPoints.put(conn, conn.getPoints().getCopy());
-            conn.setScrollPane(((LinkingContainerFigure)getFigure()).getScrollPane());
-        }
+        updateConnectionListForLinkedOpi(displayModel);
         if (originalPoints != null && !originalPoints.isEmpty()) {
             //update connections after the figure is repainted.
             getViewer().getControl().getDisplay().asyncExec(() -> updateConnectionList());
         }
-        getViewer().getControl().getDisplay().asyncExec(() -> updateConnectionListForLinkedOpi(displayModel));
 
         UIBundlingThread.getInstance().addRunnable(() -> {
             layout();
@@ -353,61 +308,36 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
         if (parentDisplay != parentDisplay2)
             parentDisplay2.syncConnections();
 
-        Rectangle childrenRange = GeometryUtil.getChildrenRange(this);
-        cropTranslation = new Point(-childrenRange.x, -childrenRange.y);
         if(getWidgetModel().isAutoSize()){
             performAutosize();
         }
     }
 
-
-    private void setMixAndMaxEdgeValues(Point point) {
-        if (point.x > maxXpoint){
-            maxXpoint = point.x;
-        }
-        if (point.y > maxYpoint){
-            maxYpoint = point.y;
-        }
-        if (point.x < minXpoint){
-            minXpoint = point.x;
-        }
-        if (point.y < minYpoint){
-            minYpoint = point.y;
-        }
-
-    }
-
     private void updateConnectionList() {
-        if(connectionList==null || originalPoints==null)
+        if (connectionList==null || originalPoints==null)
             return;
-        Rectangle fogurePosition = getFigure().getBounds();
-        final Point tranlateSize = new Point(fogurePosition.x, fogurePosition.y);
+        Rectangle figurePosition = getFigure().getBounds();
+        final Point tranlateSize = new Point(figurePosition.x, figurePosition.y);
 
-        log.fine("tranlateSize" + tranlateSize.toString());
-        log.fine("cropTranslation" + cropTranslation.toString());
-        for(ConnectionModel conn: connectionList){
-            if(conn.getPoints() != null && conn.getPoints().size()>0){
+        for (ConnectionModel conn: connectionList){
                 PointList points = originalPoints.get(conn).getCopy();
+                if (points == null) continue;
 
-                for(int i=0; i<points.size(); i++){
+                for (int i=0; i<points.size(); i++){
                     Point point = points.getPoint(i);
-                    log.fine(String.format("Point %s, original point: %s,  ",conn.getName(), point.toString()));
                     point.translate(tranlateSize);
                     if (getWidgetModel().isAutoSize()) {
                         point.translate(cropTranslation);
+                        // If translated connection falls outside the bounding box, then we move the connection to the edge of the bounding box
+                        if (point.x() <= tranlateSize.x()) point.translate(conn.getLineWidth() / 2, 0);
+                        if (point.y() <= tranlateSize.y()) point.translate(0, conn.getLineWidth() / 2);
                     }
                     point.scale(((LinkingContainerFigure)getFigure()).getZoomManager().getZoom());
                     points.setPoint(point, i);
-                    log.fine(String.format("Point %s, scaled point: %s,  ",conn.getName(), point.toString()));
-                    setMixAndMaxEdgeValues(point);
                 }
                 conn.setPoints(points);
-            }
         }
-
     }
-
-
 
     private void updateConnectionListForLinkedOpi(DisplayModel displayModel) {
     	connectionList = displayModel.getConnectionList();
@@ -425,7 +355,6 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
             conn.setScrollPane(((LinkingContainerFigure)getFigure()).getScrollPane());
         }
     }
-
 
     /**
      * {@inheritDoc} Overidden, to set the selection behaviour of child
