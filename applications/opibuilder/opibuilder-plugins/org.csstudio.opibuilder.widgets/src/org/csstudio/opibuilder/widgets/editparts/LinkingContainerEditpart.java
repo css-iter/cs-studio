@@ -56,6 +56,12 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
 
     private List<ConnectionModel> connectionList;
     private Map<ConnectionModel, PointList> originalPoints;
+    //location of right connector edge.
+    private int maxXpoint = 0;
+    private int maxYpoint = 0;
+    private int minXpoint = 0;
+    private int minYpoint = 0;
+    private Point cropTranslation;
 
     @Override
     protected IFigure doCreateFigure() {
@@ -163,6 +169,58 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
         return linkingContainerID.incrementAndGet();
     }
 
+
+    /**
+     * Automatically set the container size according its children's geography size.
+     */
+
+//    @Override
+//    public void performAutosize(){
+//        updateConnectionList();
+//
+//        Rectangle childrenRange = GeometryUtil.getChildrenRange(this);
+//        //Point tranlateSize = new Point(childrenRange.x, childrenRange.y);
+//        log.fine(String.format("Childern range, top left coodrinates: x:%s, y:%s,  ", childrenRange.getTopLeft().x, childrenRange.getTopLeft().y ));
+//        log.fine(String.format("Childern range, bottom right coodrinates: x:%s, y:%s,  ", childrenRange.getBottomRight().x, childrenRange.getBottomRight().y ));
+//
+//
+//        setMixAndMaxEdgeValues(childrenRange.getBottomRight());
+//        setMixAndMaxEdgeValues(childrenRange.getTopLeft());
+//
+//       log.fine(String.format("Max conn points: x:%s, y:%s,  ",maxXpoint,maxYpoint ));
+//       log.fine(String.format("Min conn points: x:%s, y:%s,  ",minXpoint,minYpoint ));
+//
+//       //add extra 2px to connection points, so edge is more nice
+//       maxYpoint+=2;
+//       maxXpoint+=2;
+//
+//       getWidgetModel().setSize(maxXpoint, maxYpoint);
+//
+//
+//      /*  getWidgetModel().setSize(new Dimension(
+//                        childrenRange.width + figure.getInsets().left + figure.getInsets().right -20,
+//                        childrenRange.height + figure.getInsets().top + figure.getInsets().bottom -20)); */
+//
+//
+//        /* if (minXpoint < 0){
+//            getWidgetModel().setSize(maxXpoint + (-minXpoint)+200, maxYpoint); //the minXPoint is negative, so we actually add value;
+//        } */
+//
+//
+//
+//        for(Object editpart : getChildren()){
+//            AbstractWidgetModel widget = ((AbstractBaseEditPart)editpart).getWidgetModel();
+//            log.fine(String.format("Widget %s, coodrinates: x:%s, y:%s ", widget.getName(), widget.getLocation().x(), widget.getLocation().y() ));
+//
+//
+//
+//        //  widget.setLocation(widget.getLocation().translate(tranlateSize));
+//        }
+//
+//
+//    }
+
+
     /**
      * Replace all macros in the name of the given path and construct a new path from the resolved name.
      *
@@ -175,32 +233,6 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
         return ResourceUtil.getPathFromString(path);
     }
 
-//    /**
-//     * @param path the path of the OPI file
-//     *
-//     * Removing this call because the add remove children in fillLinkingContainer overlap
-//     * with the add remove in configureDisplayModel, and cause pv connection issues.
-//     * This reverts some of the work from #912
-//     */
-//    private synchronized void loadWidgets(LinkingContainerModel model, final boolean checkSelf) {
-//        try {
-//          //  model.removeAllChildren();
-//            XMLUtil.fillLinkingContainer(model);
-//        } catch (Exception e) {
-//            //log first
-//            String message = "Failed to load: " + model.getDisplayModel().getOpiFilePath() + "\n"+ e.getMessage();
-//            Activator.getLogger().log(Level.WARNING, message , e);
-//            ConsoleService.getInstance().writeError(message);
-//            //TODO because this might not work - depends on the type of exception that happened
-//            LabelModel loadingErrorLabel = new LabelModel();
-//            loadingErrorLabel.setLocation(0, 0);
-//            loadingErrorLabel.setSize(getWidgetModel().getSize().getCopy().shrink(3, 3));
-//            loadingErrorLabel.setForegroundColor(CustomMediaFactory.COLOR_RED);
-//            loadingErrorLabel.setText(message);
-//            loadingErrorLabel.setName("Label");
-//            getWidgetModel().addChild(loadingErrorLabel);
-//        }
-//    }
 
     /**
      * @param path the path of the OPI file
@@ -320,28 +352,62 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
         DisplayModel parentDisplay2 = widgetModel.getRootDisplayModel(false);
         if (parentDisplay != parentDisplay2)
             parentDisplay2.syncConnections();
+
+        Rectangle childrenRange = GeometryUtil.getChildrenRange(this);
+        cropTranslation = new Point(-childrenRange.x, -childrenRange.y);
         if(getWidgetModel().isAutoSize()){
             performAutosize();
         }
     }
 
 
+    private void setMixAndMaxEdgeValues(Point point) {
+        if (point.x > maxXpoint){
+            maxXpoint = point.x;
+        }
+        if (point.y > maxYpoint){
+            maxYpoint = point.y;
+        }
+        if (point.x < minXpoint){
+            minXpoint = point.x;
+        }
+        if (point.y < minYpoint){
+            minYpoint = point.y;
+        }
+
+    }
+
     private void updateConnectionList() {
         if(connectionList==null || originalPoints==null)
             return;
+        Rectangle fogurePosition = getFigure().getBounds();
+        final Point tranlateSize = new Point(fogurePosition.x, fogurePosition.y);
+
+        log.fine("tranlateSize" + tranlateSize.toString());
+        log.fine("cropTranslation" + cropTranslation.toString());
         for(ConnectionModel conn: connectionList){
             if(conn.getPoints() != null && conn.getPoints().size()>0){
                 PointList points = originalPoints.get(conn).getCopy();
+
                 for(int i=0; i<points.size(); i++){
                     Point point = points.getPoint(i);
+                    log.fine(String.format("Point %s, original point: %s,  ",conn.getName(), point.toString()));
+                    point.translate(tranlateSize);
+                    if (getWidgetModel().isAutoSize()) {
+                        point.translate(cropTranslation);
+                    }
                     point.scale(((LinkingContainerFigure)getFigure()).getZoomManager().getZoom());
                     points.setPoint(point, i);
+                    log.fine(String.format("Point %s, scaled point: %s,  ",conn.getName(), point.toString()));
+                    setMixAndMaxEdgeValues(point);
                 }
                 conn.setPoints(points);
             }
         }
 
     }
+
+
 
     private void updateConnectionListForLinkedOpi(DisplayModel displayModel) {
     	connectionList = displayModel.getConnectionList();
@@ -383,7 +449,7 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
         return ((LinkingContainerFigure)getFigure()).getContentPane();
     }
 
-    @Override
+     @Override
     public void layout() {
         AbstractLayoutEditpart layoutter = getLayoutWidget();
         if(layoutter != null && layoutter.getWidgetModel().isEnabled()){

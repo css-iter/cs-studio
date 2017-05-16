@@ -32,6 +32,25 @@ public class FixedPositionAnchor extends AbstractOpiBuilderAnchor {
 
     private AnchorPosition anchorPosition;
 
+    @Override
+    public ConnectorDirection getDirection() {
+        switch (anchorPosition) {
+        case LEFT:
+        case RIGHT:
+            return ConnectorDirection.HORIZONTAL;
+        case BOTTOM:
+        case BOTTOM_LEFT:
+        case BOTTOM_RIGHT:
+        case TOP:
+        case TOP_LEFT:
+        case TOP_RIGHT:
+            return ConnectorDirection.VERTICAL;
+        default:
+            throw new IllegalStateException("Unknown constant of " + AnchorPosition.class.getCanonicalName() + ": " + anchorPosition.toString());
+        }
+
+    }
+
 
     public FixedPositionAnchor(IFigure owner, AnchorPosition anchorPosition) {
         super(owner);
