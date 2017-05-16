@@ -2,14 +2,16 @@ package org.csstudio.opibuilder.editparts;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import org.csstudio.opibuilder.editparts.AbstractOpiBuilderAnchor.ConnectorDirection;
 import org.eclipse.draw2d.AbstractRouter;
 import org.eclipse.draw2d.Connection;
 import org.eclipse.draw2d.PolylineConnection;
 import org.eclipse.draw2d.ScrollPane;
 import org.eclipse.draw2d.geometry.Point;
 import org.eclipse.draw2d.geometry.PointList;
-import org.eclipse.draw2d.geometry.Rectangle;
 
 /**
  * The router that route a connection through fixed points
@@ -17,6 +19,8 @@ import org.eclipse.draw2d.geometry.Rectangle;
  *
  */
 public class FixedPointsConnectionRouter extends AbstractRouter {
+
+    private static final Logger LOGGER = Logger.getLogger(FixedPointsConnectionRouter.class.getCanonicalName());
 
     private Map<Connection, Object> constraints = new HashMap<Connection, Object>(2);
 
@@ -52,96 +56,83 @@ public class FixedPointsConnectionRouter extends AbstractRouter {
 
     @Override
     public void route(Connection conn) {
-        PointList connPoints = conn.getPoints().getCopy();
+        PointList connPoints = new PointList();
         PointList constraintPoints = (PointList) getConstraint(conn);
-        connPoints.removeAllPoints();
+
+        // we get the absolute and relative start points of the connection
+        // absolute: on screen, relative: according to parent. May be different if the OPI is being scrolled
         Point startPoint = getStartPoint(conn);
-        conn.translateToRelative(startPoint);
+        Point startPointRel = startPoint.getCopy();
+        conn.translateToRelative(startPointRel);
+        LOGGER.log(Level.FINEST, "startPoint: " + startPoint + ", startPointRel: " + startPointRel);
 
+        // we get the absolute and relative end points of the connection
         Point endPoint = getEndPoint(conn);
-        conn.translateToRelative(endPoint);
+        Point endPointRel = endPoint.getCopy();
+        conn.translateToRelative(endPointRel);
+        LOGGER.log(Level.FINEST, "endPoint: " + endPoint + ", endPointRel: " + endPointRel);
 
-        // Detect if figure has rule to animate
-        if(((PolylineJumpConnection)conn).getInitialStartPoint() == null) {
-            ((PolylineJumpConnection)conn).setInitialStartPoint(startPoint);
-        }
-
-        int xFromStart = 0, yFromStart = 0;
-        xFromStart = ((PolylineJumpConnection)conn).getInitialStartPoint().x() - startPoint.x();
-        yFromStart = ((PolylineJumpConnection)conn).getInitialStartPoint().y() - startPoint.y();
-
-        if(((PolylineJumpConnection)conn).getInitialEndPoint() == null) {
-            ((PolylineJumpConnection)conn).setInitialEndPoint(endPoint);
-        }
-
-        int xFromEnd = 0, yFromEnd = 0;
-        xFromEnd = ((PolylineJumpConnection)conn).getInitialEndPoint().x() - endPoint.x();
-        yFromEnd = ((PolylineJumpConnection)conn).getInitialEndPoint().y() - endPoint.y();
-
-        connPoints.addPoint(startPoint);
-        PointList newPoints = new PointList();
-        for(int i=0; i<constraintPoints.size(); i++) {
-            Point point = constraintPoints.getPoint(i);
-            // updateBendpoints only from inside linking container
-            if(scrollPane != null && connectionFigure != null) {
-                scrollPane.translateToAbsolute(point);
-                connectionFigure.translateToRelative(point);
-                Rectangle bounds = scrollPane.getBounds();
-                point = new Point(point.x() + bounds.x(), point.y() + bounds.y());
-            }
-            newPoints.addPoint(point);
-        }
+        connPoints.addPoint(startPointRel);
 
         AbstractOpiBuilderAnchor anchor = (AbstractOpiBuilderAnchor)conn.getSourceAnchor();
-        Point sourcePoint = anchor.getSlantDifference(startPoint, newPoints.getFirstPoint());
+        final ConnectorDirection startDirection = anchor.getDirection();
+        LOGGER.log(Level.FINEST, "startDirection: " + startDirection.toString());
 
         anchor = (AbstractOpiBuilderAnchor)conn.getTargetAnchor();
-        Point targetPoint = anchor.getSlantDifference(endPoint, newPoints.getLastPoint());
+        final ConnectorDirection endDirection = anchor.getDirection();
+        LOGGER.log(Level.FINEST, "endDirection: " + endDirection.toString());
 
-        // figures with rules to move horizontally/vertically
-        if(xFromStart != 0 || yFromStart != 0 || xFromEnd != 0 || yFromEnd != 0) {
-            connPoints.addAll(animatedRoute(newPoints, sourcePoint, targetPoint));
-        } else {
-            connPoints.addAll(staticRoute(newPoints, sourcePoint, targetPoint));
-        }
+        connPoints.addAll(adjustRouteEndsToAnchors(constraintPoints.getCopy(), startDirection, endDirection, startPointRel, endPointRel));
 
-        connPoints.addPoint(endPoint);
+        connPoints.addPoint(endPointRel);
+
+        LOGGER.log(Level.FINEST, buildPointDebug("final connection", connPoints));
         conn.setPoints(connPoints);
     }
 
-    private PointList staticRoute(PointList oldPoints, Point sourcePoint, Point targetPoint) {
-        int xDiff = 0, yDiff = 0;
-        if (sourcePoint.x() != 0) {
-            xDiff = sourcePoint.x();
-            yDiff = targetPoint.y();
-        } else {
-            xDiff = targetPoint.x();
-            yDiff = sourcePoint.y();
-        }
+    private PointList adjustRouteEndsToAnchors(PointList oldPoints, ConnectorDirection startDirection, ConnectorDirection endDirection, Point startPointRel, Point endPointRel) {
+        simpleMove(oldPoints, startDirection, endDirection, startPointRel, endPointRel);
 
-        PointList newPoints = new PointList();
-        for(int i=0; i<oldPoints.size(); i++) {
-            Point point = oldPoints.getPoint(i);
-            point.setX(point.x() + xDiff);
-            point.setY(point.y() + yDiff);
-            newPoints.addPoint(point);
-        }
-        return newPoints;
+        return oldPoints;
     }
 
-    private PointList animatedRoute(PointList oldPoints, Point sourcePoint, Point targetPoint) {
-        PointList newPoints = new PointList();
-        for(int i=0; i<oldPoints.size(); i++) {
-            Point point = oldPoints.getPoint(i);
-            if(i == 0) {
-                point.setX(point.x() + sourcePoint.x());
-                point.setY(point.y() + sourcePoint.y());
-            } else if(i == oldPoints.size()-1) {
-                point.setX(point.x() + targetPoint.x());
-                point.setY(point.y() + targetPoint.y());
-            }
-            newPoints.addPoint(point);
+    //
+    //--------------------------------------------------------------- One or two point connections -------------------------------
+    //
+    private void simpleMove(PointList translatedPoints, ConnectorDirection startDirection, ConnectorDirection endDirection, Point startPointRel, Point endPointRel) {
+        // Handle the start point
+        final Point firstPoint = translatedPoints.getFirstPoint();
+        onePointMove(firstPoint, startDirection, startPointRel);
+        translatedPoints.setPoint(firstPoint, 0);
+
+        // Handle the end point
+        final int lastIndex = translatedPoints.size() - 1;
+        final Point lastPoint = translatedPoints.getPoint(lastIndex);
+        onePointMove(lastPoint, endDirection, endPointRel);
+        translatedPoints.setPoint(lastPoint, lastIndex);
+    }
+
+    private void onePointMove(Point pointToMove, ConnectorDirection connectorDirection, Point anchor) {
+        if (connectorDirection == ConnectorDirection.VERTICAL) {
+            // Only horizontal move affects the connection
+            pointToMove.setX(anchor.x());
+        } else {
+            // Only vertical move affects the connection
+            pointToMove.setY(anchor.y());
         }
-        return newPoints;
+    }
+
+    //
+    //--------------------------------------------------------------- Other methods -------------------------------
+    //
+
+    private String buildPointDebug(String name, PointList points) {
+        final StringBuilder sb = new StringBuilder(points.size() * 8 + 32);
+        sb.append(name).append(": [");
+        for(int i = 0; i < points.size(); ++i) {
+            final Point p = points.getPoint(i);
+            sb.append(p.toString()).append(i>=points.size()-1?"":", ");
+        }
+        return sb.append(']').toString();
     }
 }
