@@ -165,6 +165,58 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
         return linkingContainerID.incrementAndGet();
     }
 
+
+    /**
+     * Automatically set the container size according its children's geography size.
+     */
+
+//    @Override
+//    public void performAutosize(){
+//        updateConnectionList();
+//
+//        Rectangle childrenRange = GeometryUtil.getChildrenRange(this);
+//        //Point tranlateSize = new Point(childrenRange.x, childrenRange.y);
+//        log.fine(String.format("Childern range, top left coodrinates: x:%s, y:%s,  ", childrenRange.getTopLeft().x, childrenRange.getTopLeft().y ));
+//        log.fine(String.format("Childern range, bottom right coodrinates: x:%s, y:%s,  ", childrenRange.getBottomRight().x, childrenRange.getBottomRight().y ));
+//
+//
+//        setMixAndMaxEdgeValues(childrenRange.getBottomRight());
+//        setMixAndMaxEdgeValues(childrenRange.getTopLeft());
+//
+//       log.fine(String.format("Max conn points: x:%s, y:%s,  ",maxXpoint,maxYpoint ));
+//       log.fine(String.format("Min conn points: x:%s, y:%s,  ",minXpoint,minYpoint ));
+//
+//       //add extra 2px to connection points, so edge is more nice
+//       maxYpoint+=2;
+//       maxXpoint+=2;
+//
+//       getWidgetModel().setSize(maxXpoint, maxYpoint);
+//
+//
+//      /*  getWidgetModel().setSize(new Dimension(
+//                        childrenRange.width + figure.getInsets().left + figure.getInsets().right -20,
+//                        childrenRange.height + figure.getInsets().top + figure.getInsets().bottom -20)); */
+//
+//
+//        /* if (minXpoint < 0){
+//            getWidgetModel().setSize(maxXpoint + (-minXpoint)+200, maxYpoint); //the minXPoint is negative, so we actually add value;
+//        } */
+//
+//
+//
+//        for(Object editpart : getChildren()){
+//            AbstractWidgetModel widget = ((AbstractBaseEditPart)editpart).getWidgetModel();
+//            log.fine(String.format("Widget %s, coodrinates: x:%s, y:%s ", widget.getName(), widget.getLocation().x(), widget.getLocation().y() ));
+//
+//
+//
+//        //  widget.setLocation(widget.getLocation().translate(tranlateSize));
+//        }
+//
+//
+//    }
+
+
     /**
      * Automatically set the container size according its children's geography size.
      */
@@ -368,6 +420,8 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
         }
         return cumulativeOffset;
     }
+
+
 
     private void updateConnectionListForLinkedOpi(DisplayModel displayModel) {
         connectionList = displayModel.getConnectionList();
