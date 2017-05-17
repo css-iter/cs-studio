@@ -317,7 +317,7 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
         if (connectionList==null || originalPoints==null)
             return;
         Rectangle figurePosition = getFigure().getBounds();
-        final Point tranlateSize = new Point(figurePosition.x, figurePosition.y);
+        final Point tranlateSize = getRelativeToRoot(new Point(figurePosition.x, figurePosition.y));
 
         for (ConnectionModel conn: connectionList){
                 PointList points = originalPoints.get(conn).getCopy();
@@ -337,6 +337,34 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
                 }
                 conn.setPoints(points);
         }
+    }
+
+    /**
+     * This method transforms the point to be relative to the root Figure.
+     * @param origin the origin {@link Point} in this Figure's relative coordinates.
+     * @return The {@link Point} translate to the relative coordinates according to the root Figure.
+     */
+    private Point getRelativeToRoot(Point origin) {
+        IFigure root = getRootFigure(getFigure());
+
+        Point translatedPoint = origin.getCopy();
+        getFigure().translateToAbsolute(translatedPoint);
+        root.translateToRelative(translatedPoint);
+        return translatedPoint;
+    }
+
+    /**
+     * This method returns the root Figure for a given figure by traversing all the Figure parents.
+     * @param figure
+     * @return
+     */
+    private IFigure getRootFigure(IFigure figure) {
+        if (figure == null) return figure;
+        IFigure parent = figure;
+        while (parent.getParent() != null) {
+            parent = parent.getParent();
+        }
+        return parent;
     }
 
     private void updateConnectionListForLinkedOpi(DisplayModel displayModel) {
