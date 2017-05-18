@@ -58,6 +58,7 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
     private List<ConnectionModel> connectionList;
     private Map<ConnectionModel, PointList> originalPoints;
     private Point cropTranslation;
+    private Point objectsMaxEdge = new Point(0, 0);
 
     @Override
     protected IFigure doCreateFigure() {
@@ -422,63 +423,7 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
         }
         return cumulativeOffset;
     }
-
-    /**
-     * This method transforms the point to be relative to the root Figure.
-     * @param origin the origin {@link Point} in this Figure's relative coordinates.
-     * @return The {@link Point} translate to the relative coordinates according to the root Figure.
-     */
-    private Point getRelativeToRoot(Point origin) {
-        IFigure root = getRootFigure(getFigure());
-
-        Point translatedPoint = origin.getCopy();
-        getFigure().translateToAbsolute(translatedPoint);
-        root.translateToRelative(translatedPoint);
-        return translatedPoint;
-    }
-
-    /**
-     * This method returns the root Figure for a given figure by traversing all the Figure parents.
-     * @param figure
-     * @return
-     */
-    private IFigure getRootFigure(IFigure figure) {
-        if (figure == null) return figure;
-        IFigure parent = figure;
-        while (parent.getParent() != null) {
-            parent = parent.getParent();
-        }
-        return parent;
-    }
-
-    /**
-     * This method transforms the point to be relative to the root Figure.
-     * @param origin the origin {@link Point} in this Figure's relative coordinates.
-     * @return The {@link Point} translate to the relative coordinates according to the root Figure.
-     */
-    private Point getRelativeToRoot(Point origin) {
-        IFigure root = getRootFigure(getFigure());
-
-        Point translatedPoint = origin.getCopy();
-        getFigure().translateToAbsolute(translatedPoint);
-        root.translateToRelative(translatedPoint);
-        return translatedPoint;
-    }
-
-    /**
-     * This method returns the root Figure for a given figure by traversing all the Figure parents.
-     * @param figure
-     * @return
-     */
-    private IFigure getRootFigure(IFigure figure) {
-        if (figure == null) return figure;
-        IFigure parent = figure;
-        while (parent.getParent() != null) {
-            parent = parent.getParent();
-        }
-        return parent;
-    }
-
+    
     private void updateConnectionListForLinkedOpi(DisplayModel displayModel) {
         connectionList = displayModel.getConnectionList();
         if(!connectionList.isEmpty()){
