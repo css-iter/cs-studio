@@ -57,6 +57,7 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
     private List<ConnectionModel> connectionList;
     private Map<ConnectionModel, PointList> originalPoints;
     private Point cropTranslation;
+    private Point objectsMaxEdge = new Point(0, 0);
 
     @Override
     protected IFigure doCreateFigure() {
@@ -319,52 +320,67 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
         Rectangle figurePosition = getFigure().getBounds();
         final Point tranlateSize = getRelativeToRoot(new Point(figurePosition.x, figurePosition.y));
 
-        for (ConnectionModel conn: connectionList){
-                PointList points = originalPoints.get(conn).getCopy();
-                if (points == null) continue;
+        for (ConnectionModel conn : connectionList) {
+            PointList points = originalPoints.get(conn).getCopy();
+            if (points == null)
+                continue;
 
-                for (int i=0; i<points.size(); i++){
-                    Point point = points.getPoint(i);
-                    point.translate(tranlateSize);
-                    if (getWidgetModel().isAutoSize()) {
-                        point.translate(cropTranslation);
-                        // If translated connection falls outside the bounding box, then we move the connection to the edge of the bounding box
-                        if (point.x() <= tranlateSize.x()) point.translate(conn.getLineWidth() / 2, 0);
-                        if (point.y() <= tranlateSize.y()) point.translate(0, conn.getLineWidth() / 2);
-                    }
-                    point.scale(((LinkingContainerFigure)getFigure()).getZoomManager().getZoom());
-                    points.setPoint(point, i);
+            for (int i = 0; i < points.size(); i++) {
+                Point point = points.getPoint(i);
+                point.translate(tranlateSize);
+                if (getWidgetModel().isAutoSize()) {
+                    point.translate(cropTranslation);
+                    // If translated connection falls outside the bounding box,
+                    // then we move the connection to the edge of the bounding
+                    // box
+                    if (point.x() <= tranlateSize.x())
+                        point.translate(conn.getLineWidth() / 2, 0);
+                    if (point.y() <= tranlateSize.y())
+                        point.translate(0, conn.getLineWidth() / 2);
                 }
-                conn.setPoints(points);
+                point.scale(((LinkingContainerFigure) getFigure()).getZoomManager().getZoom());
+                points.setPoint(point, i);
+            }
+            conn.setPoints(points);
         }
     }
 
     /**
-     * This method transforms the point to be relative to the root Figure.
+     * This method transforms the point to be absolute to the root Figure including max figure edge in path.
      * @param origin the origin {@link Point} in this Figure's relative coordinates.
      * @return The {@link Point} translate to the relative coordinates according to the root Figure.
      */
     private Point getRelativeToRoot(Point origin) {
         IFigure root = getRootFigure(getFigure());
-
+  
         Point translatedPoint = origin.getCopy();
-        getFigure().translateToAbsolute(translatedPoint);
-        root.translateToRelative(translatedPoint);
+        root.translateToAbsolute(translatedPoint);
+        translatedPoint.translate(objectsMaxEdge);
+       
         return translatedPoint;
     }
 
     /**
      * This method returns the root Figure for a given figure by traversing all the Figure parents.
+     * Method also calculates the max edge of objects that are in way from root to given object.
      * @param figure
      * @return
      */
     private IFigure getRootFigure(IFigure figure) {
         if (figure == null) return figure;
         IFigure parent = figure;
-        while (parent.getParent() != null) {
-            parent = parent.getParent();
+    
+        while (parent.getParent() != null){
+        parent = parent.getParent();
+        getMaxObjectsEdge(parent);
+        parent.getBounds();
         }
         return parent;
+    }
+    
+    private void getMaxObjectsEdge(IFigure parent) {
+        objectsMaxEdge.x = Math.max(parent.getBounds().x,objectsMaxEdge.x);
+        objectsMaxEdge.y = Math.max(parent.getBounds().y,objectsMaxEdge.y);
     }
 
     private void updateConnectionListForLinkedOpi(DisplayModel displayModel) {
