@@ -57,7 +57,6 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
     private List<ConnectionModel> connectionList;
     private Map<ConnectionModel, PointList> originalPoints;
     private Point cropTranslation;
-    private Point objectsMaxEdge = new Point(0, 0);
 
     @Override
     protected IFigure doCreateFigure() {
@@ -317,8 +316,7 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
     private void updateConnectionList() {
         if (connectionList==null || originalPoints==null)
             return;
-        Rectangle figurePosition = getFigure().getBounds();
-        final Point tranlateSize = getRelativeToRoot(new Point(figurePosition.x, figurePosition.y));
+        final Point tranlateSize = getRelativeToRoot();
 
         for (ConnectionModel conn : connectionList) {
             PointList points = originalPoints.get(conn).getCopy();
@@ -350,37 +348,16 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
      * @param origin the origin {@link Point} in this Figure's relative coordinates.
      * @return The {@link Point} translate to the relative coordinates according to the root Figure.
      */
-    private Point getRelativeToRoot(Point origin) {
-        IFigure root = getRootFigure(getFigure());
-  
-        Point translatedPoint = origin.getCopy();
-        root.translateToAbsolute(translatedPoint);
-        translatedPoint.translate(objectsMaxEdge);
-       
-        return translatedPoint;
-    }
-
-    /**
-     * This method returns the root Figure for a given figure by traversing all the Figure parents.
-     * Method also calculates the max edge of objects that are in way from root to given object.
-     * @param figure
-     * @return
-     */
-    private IFigure getRootFigure(IFigure figure) {
-        if (figure == null) return figure;
-        IFigure parent = figure;
-    
-        while (parent.getParent() != null){
-        parent = parent.getParent();
-        getMaxObjectsEdge(parent);
-        parent.getBounds();
+    private Point getRelativeToRoot() {
+        Point cumulativeOffset = new Point(0, 0);
+        IFigure parent = getFigure();
+        while (parent.getParent() != null) {
+            Point inherited = new Point(parent.getBounds().x, parent.getBounds().y);
+            parent.translateToRelative(inherited);
+            cumulativeOffset.translate(inherited);
+            parent = parent.getParent();
         }
-        return parent;
-    }
-    
-    private void getMaxObjectsEdge(IFigure parent) {
-        objectsMaxEdge.x = Math.max(parent.getBounds().x,objectsMaxEdge.x);
-        objectsMaxEdge.y = Math.max(parent.getBounds().y,objectsMaxEdge.y);
+        return cumulativeOffset;
     }
 
     private void updateConnectionListForLinkedOpi(DisplayModel displayModel) {
