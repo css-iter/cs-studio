@@ -58,7 +58,6 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
     private List<ConnectionModel> connectionList;
     private Map<ConnectionModel, PointList> originalPoints;
     private Point cropTranslation;
-    private Point objectsMaxEdge = new Point(0, 0);
 
     @Override
     protected IFigure doCreateFigure() {
@@ -423,7 +422,7 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
         }
         return cumulativeOffset;
     }
-    
+
     private void updateConnectionListForLinkedOpi(DisplayModel displayModel) {
         connectionList = displayModel.getConnectionList();
         if(!connectionList.isEmpty()){
