@@ -35,6 +35,7 @@ import org.csstudio.swt.widgets.figures.LinkingContainerFigure;
 import org.csstudio.ui.util.thread.UIBundlingThread;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.draw2d.IFigure;
+import org.eclipse.draw2d.ScrollPane;
 import org.eclipse.draw2d.geometry.Dimension;
 import org.eclipse.draw2d.geometry.Point;
 import org.eclipse.draw2d.geometry.PointList;
@@ -316,18 +317,26 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
     private void updateConnectionList() {
         if (connectionList==null || originalPoints==null)
             return;
+        double scaleFactor = ((LinkingContainerFigure) getFigure()).getZoomManager().getZoom();
         final Point tranlateSize = getRelativeToRoot();
+        tranlateSize.scale(scaleFactor);
+        log.log(Level.FINEST, String.format("Relative to root translation (scaled by %s): %s ", scaleFactor, tranlateSize));
+
+        Point scaledCropTranslation = new Point();
+        if (cropTranslation != null)
+            scaledCropTranslation = cropTranslation.getCopy();
+        scaledCropTranslation.scale(scaleFactor);
 
         for (ConnectionModel conn : connectionList) {
             PointList points = originalPoints.get(conn).getCopy();
             if (points == null)
                 continue;
 
+            log.log(Level.FINER, "Connector: " + conn.getName());
             for (int i = 0; i < points.size(); i++) {
                 Point point = points.getPoint(i);
-                point.translate(tranlateSize);
                 if (getWidgetModel().isAutoSize()) {
-                    point.translate(cropTranslation);
+                    point.translate(scaledCropTranslation);
                     // If translated connection falls outside the bounding box,
                     // then we move the connection to the edge of the bounding
                     // box
@@ -336,7 +345,7 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
                     if (point.y() <= tranlateSize.y())
                         point.translate(0, conn.getLineWidth() / 2);
                 }
-                point.scale(((LinkingContainerFigure) getFigure()).getZoomManager().getZoom());
+                point.scale(scaleFactor);
                 points.setPoint(point, i);
             }
             conn.setPoints(points);
@@ -435,6 +444,11 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
             }
         };
         return super.getAdapter(adapter);
+    }
+
+    @Override
+    public ScrollPane getScrollPane() {
+        return ((LinkingContainerFigure)getFigure()).getScrollPane();
     }
 
 }

@@ -6,12 +6,15 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.csstudio.opibuilder.editparts.AbstractOpiBuilderAnchor.ConnectorDirection;
+import org.csstudio.opibuilder.model.AbstractContainerModel;
+import org.csstudio.opibuilder.model.ConnectionModel;
 import org.eclipse.draw2d.AbstractRouter;
 import org.eclipse.draw2d.Connection;
-import org.eclipse.draw2d.PolylineConnection;
 import org.eclipse.draw2d.ScrollPane;
 import org.eclipse.draw2d.geometry.Point;
 import org.eclipse.draw2d.geometry.PointList;
+import org.eclipse.draw2d.geometry.Rectangle;
+import org.eclipse.gef.EditPart;
 
 /**
  * The router that route a connection through fixed points
@@ -24,9 +27,7 @@ public class FixedPointsConnectionRouter extends AbstractRouter {
 
     private Map<Connection, Object> constraints = new HashMap<Connection, Object>(2);
 
-    private PolylineConnection connectionFigure;
-
-    private ScrollPane scrollPane;
+    private ConnectionModel connectionModel;
 
     public FixedPointsConnectionRouter() {
     }
@@ -46,12 +47,8 @@ public class FixedPointsConnectionRouter extends AbstractRouter {
         constraints.put(connection, constraint);
     }
 
-    public void setConnectionFigure(PolylineConnection connectionFigure) {
-        this.connectionFigure = connectionFigure;
-    }
-
-    public void setScrollPane(ScrollPane scrollPane) {
-        this.scrollPane = scrollPane;
+    public void setConnectionModel(ConnectionModel connectionModel) {
+        this.connectionModel = connectionModel;
     }
 
     @Override
@@ -64,29 +61,37 @@ public class FixedPointsConnectionRouter extends AbstractRouter {
         Point startPoint = getStartPoint(conn);
         Point startPointRel = startPoint.getCopy();
         conn.translateToRelative(startPointRel);
-        LOGGER.log(Level.FINEST, "startPoint: " + startPoint + ", startPointRel: " + startPointRel);
 
         // we get the absolute and relative end points of the connection
         Point endPoint = getEndPoint(conn);
         Point endPointRel = endPoint.getCopy();
         conn.translateToRelative(endPointRel);
-        LOGGER.log(Level.FINEST, "endPoint: " + endPoint + ", endPointRel: " + endPointRel);
 
         connPoints.addPoint(startPointRel);
 
         AbstractOpiBuilderAnchor anchor = (AbstractOpiBuilderAnchor)conn.getSourceAnchor();
         final ConnectorDirection startDirection = anchor.getDirection();
-        LOGGER.log(Level.FINEST, "startDirection: " + startDirection.toString());
 
         anchor = (AbstractOpiBuilderAnchor)conn.getTargetAnchor();
         final ConnectorDirection endDirection = anchor.getDirection();
-        LOGGER.log(Level.FINEST, "endDirection: " + endDirection.toString());
 
-        connPoints.addAll(adjustRouteEndsToAnchors(constraintPoints.getCopy(), startDirection, endDirection, startPointRel, endPointRel));
+        PointList newPoints = constraintPoints.getCopy();
+        final ScrollPane sp = getScrollPane();
+        if (connectionModel != null && sp != null) {
+            for (int i = 0; i < newPoints.size(); ++i) {
+                final Point point = newPoints.getPoint(i);
+                sp.translateToAbsolute(point);
+                conn.translateToRelative(point);
+                Rectangle bounds = sp.getBounds();
+                newPoints.setPoint(new Point(point.x() + bounds.x(), point.y() + bounds.y()), i);
+            }
+        }
+        LOGGER.log(Level.FINEST, buildPointDebug("newPoints", newPoints));
+
+        connPoints.addAll(adjustRouteEndsToAnchors(newPoints, startDirection, endDirection, startPointRel, endPointRel));
 
         connPoints.addPoint(endPointRel);
 
-        LOGGER.log(Level.FINEST, buildPointDebug("final connection", connPoints));
         conn.setPoints(connPoints);
     }
 
@@ -134,5 +139,86 @@ public class FixedPointsConnectionRouter extends AbstractRouter {
             sb.append(p.toString()).append(i>=points.size()-1?"":", ");
         }
         return sb.append(']').toString();
+    }
+
+    private ScrollPane getScrollPane() {
+        if (connectionModel != null) {
+            if (connectionModel.getScrollPane() != null) {
+                return connectionModel.getScrollPane();
+            } else {
+                // are both connected widgets defined - this should be always true
+                if ((connectionModel.getSource() == null) || (connectionModel.getTarget() == null))
+                    return null;
+                AbstractContainerModel sourceModel =  connectionModel.getSource().getParent();
+                AbstractContainerModel targetModel =  connectionModel.getTarget().getParent();
+                // if one of them is null, then at least one end if the connection is in the top-most container. No translation.
+                if ((sourceModel == null) || (targetModel == null))
+                    return null;
+                // otherwise, see if any of them is scrollable
+                AbstractScrollableEditpart sourceEditpart = getScrollable(sourceModel.getEditPart());
+                AbstractScrollableEditpart targetEditpart = getScrollable(targetModel.getEditPart());
+
+                // if one of them is not linking container, then return null
+                if ((sourceEditpart == null) || (targetEditpart == null))
+                    return null;
+
+                // now we have two options:
+                // - one linking container is inside the other
+                // - they are not one inside the other, but they have common parent
+
+                // option one?
+                ScrollPane scrollPane = getScrollPaneForContained(sourceEditpart, targetEditpart);
+                if (scrollPane != null)
+                    return scrollPane;
+
+                // option two
+                return getCommonScrollableParent(sourceEditpart, targetEditpart);
+            }
+        }
+        return null;
+    }
+
+    private AbstractScrollableEditpart getScrollable(EditPart container) {
+        EditPart c = container;
+        while (c != null) {
+            if (c instanceof AbstractScrollableEditpart)
+                return (AbstractScrollableEditpart) c;
+            c = c.getParent();
+        }
+        return null;
+    }
+
+    private ScrollPane getScrollPaneForContained(AbstractScrollableEditpart one, AbstractScrollableEditpart two) {
+        EditPart part = two;
+        // is two child of one?
+        while (part != null) {
+            if (part == one)
+                return one.getScrollPane();
+            part = part.getParent();
+        }
+        // is one child of two?
+        part = one;
+        while (part != null) {
+            if (part == two)
+                return two.getScrollPane();
+            part = part.getParent();
+        }
+        return null;
+    }
+
+    private ScrollPane getCommonScrollableParent(AbstractScrollableEditpart one, AbstractScrollableEditpart two) {
+        AbstractScrollableEditpart partOne = one;
+        // for each scrollable parent of one, check all scrollable parents of two
+        while (partOne != null) {
+            AbstractScrollableEditpart partTwo = two;
+            while (partTwo != null) {
+                if (partOne == partTwo)
+                    return partOne.getScrollPane();             // common parent found
+                partTwo = getScrollable(partTwo.getParent());
+            }
+            partOne = getScrollable(partOne.getParent());
+        }
+        // no common parent
+        return null;
     }
 }
