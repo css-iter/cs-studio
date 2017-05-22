@@ -35,6 +35,7 @@ import org.csstudio.swt.widgets.figures.LinkingContainerFigure;
 import org.csstudio.ui.util.thread.UIBundlingThread;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.draw2d.IFigure;
+import org.eclipse.draw2d.ScrollPane;
 import org.eclipse.draw2d.geometry.Dimension;
 import org.eclipse.draw2d.geometry.Point;
 import org.eclipse.draw2d.geometry.PointList;
@@ -316,55 +317,55 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
     private void updateConnectionList() {
         if (connectionList==null || originalPoints==null)
             return;
-        Rectangle figurePosition = getFigure().getBounds();
-        final Point tranlateSize = getRelativeToRoot(new Point(figurePosition.x, figurePosition.y));
+        double scaleFactor = ((LinkingContainerFigure) getFigure()).getZoomManager().getZoom();
+        final Point tranlateSize = getRelativeToRoot();
+        tranlateSize.scale(scaleFactor);
+        log.log(Level.FINEST, String.format("Relative to root translation (scaled by %s): %s ", scaleFactor, tranlateSize));
 
-        for (ConnectionModel conn: connectionList){
-                PointList points = originalPoints.get(conn).getCopy();
-                if (points == null) continue;
+        Point scaledCropTranslation = new Point();
+        if (cropTranslation != null)
+            scaledCropTranslation = cropTranslation.getCopy();
+        scaledCropTranslation.scale(scaleFactor);
 
-                for (int i=0; i<points.size(); i++){
-                    Point point = points.getPoint(i);
-                    point.translate(tranlateSize);
-                    if (getWidgetModel().isAutoSize()) {
-                        point.translate(cropTranslation);
-                        // If translated connection falls outside the bounding box, then we move the connection to the edge of the bounding box
-                        if (point.x() <= tranlateSize.x()) point.translate(conn.getLineWidth() / 2, 0);
-                        if (point.y() <= tranlateSize.y()) point.translate(0, conn.getLineWidth() / 2);
-                    }
-                    point.scale(((LinkingContainerFigure)getFigure()).getZoomManager().getZoom());
-                    points.setPoint(point, i);
+        for (ConnectionModel conn : connectionList) {
+            PointList points = originalPoints.get(conn).getCopy();
+            if (points == null)
+                continue;
+
+            log.log(Level.FINER, "Connector: " + conn.getName());
+            for (int i = 0; i < points.size(); i++) {
+                Point point = points.getPoint(i);
+                if (getWidgetModel().isAutoSize()) {
+                    point.translate(scaledCropTranslation);
+                    // If translated connection falls outside the bounding box,
+                    // then we move the connection to the edge of the bounding
+                    // box
+                    if (point.x() <= tranlateSize.x())
+                        point.translate(conn.getLineWidth() / 2, 0);
+                    if (point.y() <= tranlateSize.y())
+                        point.translate(0, conn.getLineWidth() / 2);
                 }
-                conn.setPoints(points);
+                point.scale(scaleFactor);
+                points.setPoint(point, i);
+            }
+            conn.setPoints(points);
         }
     }
 
     /**
-     * This method transforms the point to be relative to the root Figure.
-     * @param origin the origin {@link Point} in this Figure's relative coordinates.
+     * This method transforms the point to be absolute to the root Figure including max figure edge in path.
      * @return The {@link Point} translate to the relative coordinates according to the root Figure.
      */
-    private Point getRelativeToRoot(Point origin) {
-        IFigure root = getRootFigure(getFigure());
-
-        Point translatedPoint = origin.getCopy();
-        getFigure().translateToAbsolute(translatedPoint);
-        root.translateToRelative(translatedPoint);
-        return translatedPoint;
-    }
-
-    /**
-     * This method returns the root Figure for a given figure by traversing all the Figure parents.
-     * @param figure
-     * @return
-     */
-    private IFigure getRootFigure(IFigure figure) {
-        if (figure == null) return figure;
-        IFigure parent = figure;
+    private Point getRelativeToRoot() {
+        Point cumulativeOffset = new Point(0, 0);
+        IFigure parent = getFigure();
         while (parent.getParent() != null) {
+            Point inherited = new Point(parent.getBounds().x, parent.getBounds().y);
+            parent.translateToRelative(inherited);
+            cumulativeOffset.translate(inherited);
             parent = parent.getParent();
         }
-        return parent;
+        return cumulativeOffset;
     }
 
     private void updateConnectionListForLinkedOpi(DisplayModel displayModel) {
@@ -442,6 +443,11 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
             }
         };
         return super.getAdapter(adapter);
+    }
+
+    @Override
+    public ScrollPane getScrollPane() {
+        return ((LinkingContainerFigure)getFigure()).getScrollPane();
     }
 
 }
