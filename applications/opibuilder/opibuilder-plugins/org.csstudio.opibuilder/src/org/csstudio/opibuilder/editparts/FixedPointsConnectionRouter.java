@@ -29,7 +29,11 @@ public class FixedPointsConnectionRouter extends AbstractRouter {
 
     private ConnectionModel connectionModel;
 
+    private ScrollPane scrollPaneCached;
+    private boolean scrollPaneInitialized;
+
     public FixedPointsConnectionRouter() {
+        scrollPaneInitialized = false;
     }
 
     @Override
@@ -142,6 +146,14 @@ public class FixedPointsConnectionRouter extends AbstractRouter {
     }
 
     private ScrollPane getScrollPane() {
+        if (!scrollPaneInitialized) {
+            scrollPaneCached = getScrollPaneImpl();
+            scrollPaneInitialized = true;
+        }
+        return scrollPaneCached;
+    }
+
+    private ScrollPane getScrollPaneImpl() {
         if (connectionModel != null) {
             if (connectionModel.getScrollPane() != null) {
                 return connectionModel.getScrollPane();
