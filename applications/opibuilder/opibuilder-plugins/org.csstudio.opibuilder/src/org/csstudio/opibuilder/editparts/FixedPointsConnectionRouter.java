@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.csstudio.opibuilder.editparts.AbstractOpiBuilderAnchor.ConnectorDirection;
+import org.csstudio.opibuilder.editparts.AbstractOpiBuilderAnchor.ConnectorOrientation;
 import org.csstudio.opibuilder.model.AbstractContainerModel;
 import org.csstudio.opibuilder.model.ConnectionModel;
 import org.eclipse.draw2d.AbstractRouter;
@@ -74,10 +74,10 @@ public class FixedPointsConnectionRouter extends AbstractRouter {
         connPoints.addPoint(startPointRel);
 
         AbstractOpiBuilderAnchor anchor = (AbstractOpiBuilderAnchor)conn.getSourceAnchor();
-        final ConnectorDirection startDirection = anchor.getDirection();
+        final ConnectorOrientation startDirection = anchor.getOrientation();
 
         anchor = (AbstractOpiBuilderAnchor)conn.getTargetAnchor();
-        final ConnectorDirection endDirection = anchor.getDirection();
+        final ConnectorOrientation endDirection = anchor.getOrientation();
 
         PointList newPoints = constraintPoints.getCopy();
         final ScrollPane sp = getScrollPane();
@@ -99,7 +99,7 @@ public class FixedPointsConnectionRouter extends AbstractRouter {
         conn.setPoints(connPoints);
     }
 
-    private PointList adjustRouteEndsToAnchors(PointList oldPoints, ConnectorDirection startDirection, ConnectorDirection endDirection, Point startPointRel, Point endPointRel) {
+    private PointList adjustRouteEndsToAnchors(PointList oldPoints, ConnectorOrientation startDirection, ConnectorOrientation endDirection, Point startPointRel, Point endPointRel) {
         simpleMove(oldPoints, startDirection, endDirection, startPointRel, endPointRel);
 
         return oldPoints;
@@ -108,7 +108,7 @@ public class FixedPointsConnectionRouter extends AbstractRouter {
     //
     //--------------------------------------------------------------- One or two point connections -------------------------------
     //
-    private void simpleMove(PointList translatedPoints, ConnectorDirection startDirection, ConnectorDirection endDirection, Point startPointRel, Point endPointRel) {
+    private void simpleMove(PointList translatedPoints, ConnectorOrientation startDirection, ConnectorOrientation endDirection, Point startPointRel, Point endPointRel) {
         // Handle the start point
         final Point firstPoint = translatedPoints.getFirstPoint();
         onePointMove(firstPoint, startDirection, startPointRel);
@@ -121,8 +121,8 @@ public class FixedPointsConnectionRouter extends AbstractRouter {
         translatedPoints.setPoint(lastPoint, lastIndex);
     }
 
-    private void onePointMove(Point pointToMove, ConnectorDirection connectorDirection, Point anchor) {
-        if (connectorDirection == ConnectorDirection.VERTICAL) {
+    private void onePointMove(Point pointToMove, ConnectorOrientation connectorDirection, Point anchor) {
+        if (connectorDirection == ConnectorOrientation.VERTICAL) {
             // Only horizontal move affects the connection
             pointToMove.setX(anchor.x());
         } else {

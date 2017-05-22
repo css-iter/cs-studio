@@ -33,18 +33,18 @@ public class FixedPositionAnchor extends AbstractOpiBuilderAnchor {
     private AnchorPosition anchorPosition;
 
     @Override
-    public ConnectorDirection getDirection() {
+    public ConnectorOrientation getOrientation() {
         switch (anchorPosition) {
         case LEFT:
         case RIGHT:
-            return ConnectorDirection.HORIZONTAL;
+            return ConnectorOrientation.HORIZONTAL;
         case BOTTOM:
         case BOTTOM_LEFT:
         case BOTTOM_RIGHT:
         case TOP:
         case TOP_LEFT:
         case TOP_RIGHT:
-            return ConnectorDirection.VERTICAL;
+            return ConnectorOrientation.VERTICAL;
         default:
             throw new IllegalStateException("Unknown constant of " + AnchorPosition.class.getCanonicalName() + ": " + anchorPosition.toString());
         }
@@ -122,29 +122,6 @@ public class FixedPositionAnchor extends AbstractOpiBuilderAnchor {
         Point p= new Point(x, y);
         getOwner().translateToAbsolute(p);
         return p;
-    }
-
-    @Override
-    public Point getSlantDifference(Point anchorPoint, Point midPoint) {
-        int x=0, y=0;
-
-        switch (anchorPosition) {
-        case LEFT:
-        case RIGHT:
-            y=(anchorPoint.y() - midPoint.y());
-            break;
-        case BOTTOM:
-        case BOTTOM_LEFT:
-        case BOTTOM_RIGHT:
-        case TOP:
-        case TOP_LEFT:
-        case TOP_RIGHT:
-            x=(anchorPoint.x() - midPoint.x());
-            break;
-        default:
-            break;
-        }
-        return new Point(x, y);
     }
 
     /**

@@ -1,9 +1,33 @@
+/****************************************************************************
+* Copyright (c) 2010-2017 ITER Organization.
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+****************************************************************************/
 package org.csstudio.opibuilder.editparts;
 
 import org.eclipse.draw2d.Polyline;
 import org.eclipse.draw2d.geometry.Point;
 import org.eclipse.draw2d.geometry.Rectangle;
 
+/**
+ * <p>
+ * This class represents an anchor on a polygon or polyline widget.
+ * </p><p>
+ * On a normal widget the there are just 8 possible positions for the connector,
+ * and they are all on the widget bounding box:
+ * <ul>
+ * <li> 4 are on the middle of each edge of the bounding box</li>
+ * <li> 4 are on each corner of the bounding box</li>
+ * </ul>
+ * This is true even if the widget does not will its bounding box completely.
+ * </p><p>
+ * On a polyline or a polygon widget the anchors are wherever there is a bend in the
+ * polyline.
+ * </p>
+ * @author mvitorovic
+ */
 public class PolyGraphAnchor extends AbstractOpiBuilderAnchor {
     private int pointIndex;
     private Polyline polyline;
@@ -27,11 +51,11 @@ public class PolyGraphAnchor extends AbstractOpiBuilderAnchor {
     }
 
     @Override
-    public ConnectorDirection getDirection() {
-        return getDirection(polyline.getPoints().getPoint(pointIndex));
+    public ConnectorOrientation getOrientation() {
+        return getOrientation(polyline.getPoints().getPoint(pointIndex));
     }
 
-    private ConnectorDirection getDirection(final Point anchor) {
+    private ConnectorOrientation getOrientation(final Point anchor) {
         // calculate the direction. The direction for now is decided like this:
         // if the connector is closest to the left or right side of the bounding box, then horizontal connection line is selected
         // if the connector is closest to the top or bottom side of the bounding box, then vertical connection line is selected
@@ -44,23 +68,8 @@ public class PolyGraphAnchor extends AbstractOpiBuilderAnchor {
         int topBottom = Math.min(Math.abs(translatedAnchor.y - bounds.y), Math.abs(translatedAnchor.y - (bounds.y + bounds.height)));
         // anchorPoint and midPoint are both in original coordinates
         if (leftRight < topBottom)
-            return ConnectorDirection.HORIZONTAL;
+            return ConnectorOrientation.HORIZONTAL;
         else
-            return ConnectorDirection.VERTICAL;
-    }
-
-    @Override
-    public Point getSlantDifference(Point anchorPoint, Point midPoint) {
-        int x = 0;
-        int y = 0;
-        // anchorPoint and midPoint are both in original coordinates
-        if (getDirection(anchorPoint) == ConnectorDirection.HORIZONTAL) {
-            // closer to the left or right edge
-            y = anchorPoint.y() - midPoint.y();
-        } else {
-            // closer to the top or bottom edge
-            x = anchorPoint.x() - midPoint.x();
-        }
-        return new Point(x, y);
+            return ConnectorOrientation.VERTICAL;
     }
 }
