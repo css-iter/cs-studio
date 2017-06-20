@@ -56,6 +56,7 @@ public class FileUtil {
         final IPath path = buildAbsolutePath(filePath, widget);
         SAXBuilder saxBuilder = new SAXBuilder();
         saxBuilder.setEntityResolver(new CssEntityResolver());
+        saxBuilder.setFeature("http://apache.org/xml/features/xinclude", true);
         File file = ResourceUtil.getFile(path);
         final Document doc;
         if (file == null) {
