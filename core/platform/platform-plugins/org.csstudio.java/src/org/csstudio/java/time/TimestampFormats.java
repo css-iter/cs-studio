@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
-import org.eclipse.core.runtime.preferences.BundleDefaultsScope;
+import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 
 /**
@@ -45,7 +45,7 @@ public class TimestampFormats {
     }
 
     final private static ZoneId zone = ZoneId.systemDefault();
-    final private static IEclipsePreferences preferenceNode = BundleDefaultsScope.INSTANCE.getNode("org.csstudio.java");
+    final private static IEclipsePreferences preferenceNode = DefaultScope.INSTANCE.getNode("org.csstudio.java");
 
     /** Time stamp format for 'full' time stamp */
     final public static DateTimeFormatter FULL_FORMAT = createFormatter(Format.FULL).withZone(zone);
