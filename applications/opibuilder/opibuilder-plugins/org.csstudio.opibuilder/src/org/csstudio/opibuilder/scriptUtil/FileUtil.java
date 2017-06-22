@@ -103,7 +103,7 @@ public class FileUtil {
             saxBuilder.build(new ByteArrayInputStream("<t></t>".getBytes("UTF-8"))); // exception will be thrown at build, not when setting the feature.
             return;
         } catch (JDOMException | IOException e) {
-            LOGGER.log(Level.WARNING, "Could not create Sax builder with Xinclude feature, trying to create it without Xinclude feature", e);
+            LOGGER.log(Level.WARNING, "Could not create Sax builder with Xinclude feature, trying to create it without Xinclude feature");
         }
         // if creation with Xinclude fails, we use create it without xInclude
         try {
