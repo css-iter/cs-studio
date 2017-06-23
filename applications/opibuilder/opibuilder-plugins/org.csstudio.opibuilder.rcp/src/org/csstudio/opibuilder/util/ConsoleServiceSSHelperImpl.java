@@ -10,10 +10,11 @@ package org.csstudio.opibuilder.util;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.logging.Level;
 
+import org.csstudio.java.time.TimestampFormats;
 import org.csstudio.opibuilder.OPIBuilderPlugin;
 import org.csstudio.opibuilder.preferences.PreferencesHelper;
 import org.csstudio.ui.util.CustomMediaFactory;
@@ -36,6 +37,7 @@ import org.eclipse.ui.internal.console.ConsoleView;
 public class ConsoleServiceSSHelperImpl extends ConsoleServiceSSHelper {
 
     private static final String ENTER = "\n"; //$NON-NLS-1$
+    final public static DateTimeFormatter CONSOLE_OUTPUT_FROMAT = TimestampFormats.SECONDS_FORMAT;
 
     /**
      * The IO console.
@@ -101,16 +103,9 @@ public class ConsoleServiceSSHelperImpl extends ConsoleServiceSSHelper {
         }
     }
 
-
-
     private String getTimeString(){
-        Calendar cal = Calendar.getInstance();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); //$NON-NLS-1$
-        return sdf.format(cal.getTime());
-
+        return CONSOLE_OUTPUT_FROMAT.format(Instant.now());
     }
-
-
 
     /**Write error information to the OPI console.
      * @param message the output string.
