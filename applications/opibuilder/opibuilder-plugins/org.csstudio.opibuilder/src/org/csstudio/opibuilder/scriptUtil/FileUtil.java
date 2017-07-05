@@ -8,12 +8,9 @@
 package org.csstudio.opibuilder.scriptUtil;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.csstudio.opibuilder.editparts.AbstractBaseEditPart;
@@ -25,9 +22,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.jdom.Document;
 import org.jdom.Element;
-import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
-import org.xml.sax.SAXException;
 
 /**
  * The Utility class to help file operating.
@@ -37,7 +32,6 @@ import org.xml.sax.SAXException;
  */
 public class FileUtil {
 
-    public static SAXBuilder saxBuilder;
     private static Logger LOGGER = Logger.getLogger(FileUtil.class.getName());
 
     /**
@@ -74,10 +68,9 @@ public class FileUtil {
     public static Element loadXMLFile(final String filePath, final AbstractBaseEditPart widget) throws Exception {
         final IPath path = buildAbsolutePath(filePath, widget);
 
-        //we only create one saxBuilder instance and reuse it.
-        if (saxBuilder == null) {
-            createSaxBuilder();
-        }
+        final SAXBuilder saxBuilder = new SAXBuilder();
+        saxBuilder.setEntityResolver(new CssEntityResolver());
+        //saxBuilder.setFeature("http://apache.org/xml/features/xinclude", true);
 
         File file = ResourceUtil.getFile(path);
         final Document doc;
@@ -89,32 +82,6 @@ public class FileUtil {
             doc = saxBuilder.build(file);
         }
         return doc.getRootElement();
-    }
-
-    /**
-     * We create {@link SAXBuilder} with xinclude. If this fails, we create it whithout xinclude
-     * @throws Exception
-     */
-    private static void createSaxBuilder() throws SAXException {
-        try {
-            saxBuilder = new SAXBuilder();
-            saxBuilder.setFeature("http://apache.org/xml/features/xinclude", true);
-            saxBuilder.setEntityResolver(new CssEntityResolver());
-            saxBuilder.build(new ByteArrayInputStream("<t></t>".getBytes("UTF-8"))); // exception will be thrown at build, not when setting the feature.
-            return;
-        } catch (JDOMException | IOException e) {
-            LOGGER.log(Level.WARNING, "Could not create Sax builder with Xinclude feature, trying to create it without Xinclude feature");
-        }
-        // if creation with Xinclude fails, we use create it without xInclude
-        try {
-            saxBuilder = new SAXBuilder();
-            saxBuilder.setEntityResolver(new CssEntityResolver());
-            saxBuilder.build(new ByteArrayInputStream("<t></t>".getBytes("UTF-8")));
-            return;
-        } catch (JDOMException | IOException e) {
-            LOGGER.log(Level.SEVERE, "Could not create Sax builder", e);
-            throw new SAXException(e);
-        }
     }
 
     /**
