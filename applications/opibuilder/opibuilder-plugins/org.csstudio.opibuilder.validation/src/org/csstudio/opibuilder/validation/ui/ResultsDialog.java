@@ -258,7 +258,7 @@ public class ResultsDialog extends TitleAreaDialog {
         if (Activator.getInstance().isWarnAboutJythonScripts()
             && noWidgetsWithPythonEmbedded + noWidgetsWithPythonStandalone > 0) {
             l = new Label(parent, SWT.HORIZONTAL);
-            l.setText("Jython sciprts are used!");
+            l.setText("Jython scripts are used!");
             l.setLayoutData(createGridData(true));
             l.setFont(font);
         }
