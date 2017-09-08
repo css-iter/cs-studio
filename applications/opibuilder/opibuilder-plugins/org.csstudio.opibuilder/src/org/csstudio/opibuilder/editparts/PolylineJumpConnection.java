@@ -62,6 +62,8 @@ public class PolylineJumpConnection extends PolylineConnection {
 
         // then original implementation is called to take care of painting figure, client area, children, and border
         super.paint(graphics);
+        setBounds(getBounds().expand(lineJumpSize*2, lineJumpSize*2));
+        getUpdateManager().performUpdate(getBounds());
     }
 
     @Override
@@ -107,8 +109,6 @@ public class PolylineJumpConnection extends PolylineConnection {
                     break;
                 }
             }
-            // Adjust bounds to accommodate arcs and squares. Otherwise they might clip
-            //setBounds(getBounds().expand(lineJumpSize*2, lineJumpSize*2));
         }
     }
 

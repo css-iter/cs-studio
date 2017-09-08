@@ -37,6 +37,19 @@ import org.eclipse.gef.requests.ReconnectRequest;
  */
 public class WidgetNodeEditPolicy extends GraphicalNodeEditPolicy {
 
+    static {
+        // Loading a schema service for the first time when the first widget connection is
+        // created throws an exception, because the schema service is loaded in the UI thread.
+        //
+        // Opening it in the UI thread creates a modal progress dialog, and this interferes
+        // with connection which is drawn from the first anchor to the mouse pointer.
+        //
+        // To avoid this situation, we make sure that the schema service is already loaded
+        // when we add the first connector. The schema service is a singleton and will
+        // just be returned whenever requested from now on.
+        SchemaService.getInstance();
+    }
+
     /**
      * the List of handles
      */
@@ -135,7 +148,7 @@ public class WidgetNodeEditPolicy extends GraphicalNodeEditPolicy {
         IFigure layer = getLayer(LayerConstants.HANDLE_LAYER);
         handles = createAnchorHandles();
         for (int i = 0; i < handles.size(); i++)
-            layer.add((IFigure) handles.get(i));
+            layer.add(handles.get(i));
     }
 
     /**
@@ -144,7 +157,7 @@ public class WidgetNodeEditPolicy extends GraphicalNodeEditPolicy {
      * @return List of handles; cannot be <code>null</code>
      */
     protected List<AnchorHandle> createAnchorHandles(){
-        List<AnchorHandle> result = new ArrayList<AnchorHandle>();
+        List<AnchorHandle> result = new ArrayList<>();
         for(ConnectionAnchor anchor: getWidgetEditPart().getAnchorMap().values()){
             result.add(new AnchorHandle(getWidgetEditPart(), anchor));
         }
@@ -160,7 +173,7 @@ public class WidgetNodeEditPolicy extends GraphicalNodeEditPolicy {
             return;
         IFigure layer = getLayer(LayerConstants.HANDLE_LAYER);
         for (int i = 0; i < handles.size(); i++)
-            layer.remove((IFigure) handles.get(i));
+            layer.remove(handles.get(i));
         handles = null;
     }
 }
