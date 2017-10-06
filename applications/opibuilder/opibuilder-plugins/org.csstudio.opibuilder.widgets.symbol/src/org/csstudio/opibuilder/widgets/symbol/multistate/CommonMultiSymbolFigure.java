@@ -45,17 +45,15 @@ import org.eclipse.swt.graphics.Font;
 /**
  * @author Fred Arnaud (Sopra Group)
  *
- * For symbol figures, there should be only couple of states. ex 50. Form memory leak fix the states from double are rounded
- * to long, so we do not create almost infinite number of images for every state from double value.
+ * Form memory leak fix the states from double are rounded to long, so we do not create almost infinite number
+ * of images for every state from double value.
  *
- *  *
- * TODO: This has to be globally refactored so we use only the images that actually contain staes.No negative states should exist.
+ * TODO: This has to be globally refactored so we use only the images that actually contain staes. No negative states should exist.
  *
  * @author Borut Terpinc
  */
 public abstract class CommonMultiSymbolFigure extends Figure implements SymbolImageListener {
 
-    private static final int MAX_NUMBER_OF_STATES = 50;
     private static final String BOOLEAN_VALUE_TRUE = "true";
     protected String baseImagePath;
     protected Map<Integer, String> statesMap;
@@ -213,11 +211,6 @@ public abstract class CommonMultiSymbolFigure extends Figure implements SymbolIm
             if (path == null)
                 path = symbolImagePath;
             remainingImagesToLoad = 1;
-            if (index > MAX_NUMBER_OF_STATES) { // we ignore more than max number of states
-                remainingImagesToLoad =0;
-                loadImageFromFile(path, MAX_NUMBER_OF_STATES-1);
-                return;
-            }
             loadImageFromFile(path, index);
         }
         setState(index);
@@ -238,11 +231,6 @@ public abstract class CommonMultiSymbolFigure extends Figure implements SymbolIm
             if (path == null)
                 path = symbolImagePath;
             remainingImagesToLoad = 1;
-            if (index > MAX_NUMBER_OF_STATES) { // we ignore more than max number of states
-                remainingImagesToLoad =0;
-                loadImageFromFile(path, MAX_NUMBER_OF_STATES-1);
-                return;
-            }
             loadImageFromFile(path, index);
         }
         setState(index);
@@ -268,12 +256,6 @@ public abstract class CommonMultiSymbolFigure extends Figure implements SymbolIm
             if (path == null)
                 path = symbolImagePath;
             remainingImagesToLoad = 1;
-            if (index > MAX_NUMBER_OF_STATES) { // we ignore more than max number of states
-                remainingImagesToLoad =0;
-                loadImageFromFile(path, MAX_NUMBER_OF_STATES-1);
-                return;
-            }
-
             loadImageFromFile(path, index);
         }
         setState(index);
