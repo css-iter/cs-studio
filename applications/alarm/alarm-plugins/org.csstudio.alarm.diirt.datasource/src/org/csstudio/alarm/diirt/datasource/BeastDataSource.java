@@ -28,7 +28,6 @@ import org.diirt.datasource.ChannelHandler;
 import org.diirt.datasource.DataSource;
 import org.diirt.datasource.vtype.DataTypeSupport;
 
-import com.thoughtworks.xstream.InitializationException;
 /**
  * @author Kunal Shroff
  *
@@ -53,17 +52,25 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
 
     private BeastDataSourceConfiguration configuration;
 
+    private BeastAlarmClientModelListener modelListener;
+
     static {
         // Install type support for the types it generates.
         DataTypeSupport.install();
     }
 
     private class BeastAlarmClientModelListener implements AlarmClientModelListener{
+        private BeastDataSource parent;
+
+        BeastAlarmClientModelListener(BeastDataSource parent) {
+            this.parent = parent;
+        }
+
         @Override
         public void newAlarmConfiguration(AlarmClientModel model) {
             log.config("beast  datasource: new alarm configuration --- " + model);
-            synchronized (channelConsumers) {
-                for (String channelName : channelConsumers.keySet()) {
+            synchronized (parent.channelConsumers) {
+                for (String channelName : parent.channelConsumers.keySet()) {
                     BeastChannelHandler channel = (BeastChannelHandler) getChannels()
                             .get(channelHandlerLookupName(channelName));
                     channel.reconnect();
@@ -74,8 +81,8 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
         @Override
         public void serverTimeout(AlarmClientModel model) {
             log.warning("beast datasource: server timeout (server alive: " + model.isServerAlive() + ")");
-            synchronized (channelConsumers) {
-                for (String channelName : channelConsumers.keySet()) {
+            synchronized (parent.channelConsumers) {
+                for (String channelName : parent.channelConsumers.keySet()) {
                     BeastChannelHandler channel = (BeastChannelHandler) getChannels()
                             .get(channelHandlerLookupName(channelName));
                     // notify the ChannelHandler that we lost connection
@@ -95,8 +102,8 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
         public void newAlarmState(AlarmClientModel alarmModel, AlarmTreePV pv, boolean parent_changed) {
             if (pv != null) {
                 log.fine(pv.getPathName());
-                synchronized (channelConsumers) {
-                    channelConsumers.forEach((key, pathHandlers) -> {
+                synchronized (parent.channelConsumers) {
+                    parent.channelConsumers.forEach((key, pathHandlers) -> {
                         if (BeastTypeSupport.getStrippedChannelName(key).equals(pv.getPathName().substring(1))
                                 || BeastTypeSupport.getStrippedChannelName(key).equals(pv.getName())) {
                             if (pathHandlers != null) {
@@ -111,8 +118,8 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
                 AlarmTreeItem parent = pv.getParent();
                 while (parent != null) {
                     final String parentPath = parent.getPathName();
-                    synchronized (channelConsumers) {
-                        channelConsumers.forEach((key, pathHandlers) -> {
+                    synchronized (this.parent.channelConsumers) {
+                        this.parent.channelConsumers.forEach((key, pathHandlers) -> {
                             if (BeastTypeSupport.getStrippedChannelName(key).equals(parentPath.substring(1))) {
                                 if (pathHandlers != null) {
                                     for (Consumer consumer : pathHandlers) {
@@ -131,8 +138,8 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
             } else {
                 // The AlarmClientModel has recovered from a disconnection or is notifying us that the first
                 // messages have been received after initial connection.
-                synchronized (channelConsumers) {
-                    for (String channelName : channelConsumers.keySet()) {
+                synchronized (parent.channelConsumers) {
+                    for (String channelName : parent.channelConsumers.keySet()) {
                         BeastChannelHandler channel = (BeastChannelHandler) getChannels()
                                 .get(channelHandlerLookupName(channelName));
                         if (channel!=null)
@@ -146,6 +153,8 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
     public BeastDataSource(BeastDataSourceConfiguration configuration) {
         super(true);
         this.configuration = configuration;
+        // one global listener for all models
+        modelListener = new BeastAlarmClientModelListener(this);
         try {
 
             // Create an instance to the AlarmClientModel
@@ -154,7 +163,7 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
                     .thenAccept((model) -> {
                         this.model = model;
                         this.models.put(model.getConfigurationName(), model);
-                        this.model.addListener(new BeastAlarmClientModelListener());
+                        this.model.addListener(modelListener);
                     });
             typeSupport = new BeastTypeSupport();
 
@@ -250,7 +259,7 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
                 return alarmTreeItem;
             }
         } else {
-            throw new InitializationException("Model hasn't been created yet");
+            throw new InitializationException("Model hasn't been created yet: " + uri.getPath());
         }
     }
 
@@ -356,8 +365,7 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
             try {
                 if (!models.containsKey(confName)) {
                     log.log(Level.FINER, () -> "Loading model: " + confName);
-                    final AlarmClientModel aModel = AlarmClientModel.getInstance(confName);
-                    aModel.addListener(new BeastAlarmClientModelListener());
+                    final AlarmClientModel aModel = AlarmClientModel.getInstance(confName, modelListener);
                     models.put(confName, aModel);
                 }
                 diirtConfNames.remove(confName);
