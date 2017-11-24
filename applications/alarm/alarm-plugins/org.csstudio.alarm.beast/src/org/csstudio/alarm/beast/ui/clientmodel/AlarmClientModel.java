@@ -131,11 +131,17 @@ public class AlarmClientModel
     /** Indicates if the model accepts or denies a change of the configuration name */
     final private boolean allow_config_changes;
 
+    protected AlarmClientModel(final String config_name) {
+        this.config_name = config_name;
+        this.allow_config_changes = false;
+        createPseudoAlarmTree(Messages.AlarmClientModel_NotInitialized);
+    }
+
     /** Initialize client model */
     private AlarmClientModel(final String config_name, boolean allow_config_changes) throws Exception
     {
         this.config_name = config_name;
-        this.allow_config_changes = allow_config_changes;
+        this.allow_config_changes = false;  // XXX prevent config changes, all models are loaded anyhow.
         // Initial dummy alarm info
         createPseudoAlarmTree(Messages.AlarmClientModel_NotInitialized);
 
@@ -1027,7 +1033,7 @@ public class AlarmClientModel
      *  @param info Info that will show as dummy alarm tree item
      *  @return Pseudo alarm tree
      */
-    private synchronized void createPseudoAlarmTree(final String info)
+    protected synchronized void createPseudoAlarmTree(final String info)
     {
         config_tree = new AlarmTreeRoot("Pseudo", -1);
         new AlarmTreeItem(config_tree, info, 0);
