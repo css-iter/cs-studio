@@ -45,11 +45,10 @@ import org.eclipse.swt.graphics.Font;
 /**
  * @author Fred Arnaud (Sopra Group)
  *
- * For symbol figures, there should be only couple of states. ex 50. Form memory leak fix the states from double are rounded
- * to long, so we do not create almost infinite number of images for every state from double value.
+ * Form memory leak fix the states from double are rounded to long, so we do not create almost infinite number
+ * of images for every state from double value.
  *
- *  *
- * TODO: This has to be globally refactored so we use only the images that actually contain staes.No negative states should exist.
+ * TODO: This has to be globally refactored so we use only the images that actually contain staes. No negative states should exist.
  *
  * @author Borut Terpinc
  */

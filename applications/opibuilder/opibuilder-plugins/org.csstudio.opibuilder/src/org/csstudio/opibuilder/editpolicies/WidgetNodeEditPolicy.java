@@ -47,7 +47,7 @@ public class WidgetNodeEditPolicy extends GraphicalNodeEditPolicy {
         // To avoid this situation, we make sure that the schema service is already loaded
         // when we add the first connector. The schema service is a singleton and will
         // just be returned whenever requested from now on.
-        SchemaService.getInstance();
+        SchemaService.getInstance(false);
     }
 
     /**
