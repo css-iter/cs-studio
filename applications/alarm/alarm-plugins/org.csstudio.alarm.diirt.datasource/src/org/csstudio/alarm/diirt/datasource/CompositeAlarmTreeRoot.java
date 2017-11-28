@@ -6,7 +6,6 @@ import java.util.List;
 import org.csstudio.alarm.beast.Messages;
 import org.csstudio.alarm.beast.client.AlarmTreeItem;
 import org.csstudio.alarm.beast.client.AlarmTreeLeaf;
-import org.csstudio.alarm.beast.client.AlarmTreePosition;
 import org.csstudio.alarm.beast.client.AlarmTreeRoot;
 
 public class CompositeAlarmTreeRoot extends AlarmTreeRoot {
@@ -41,16 +40,11 @@ public class CompositeAlarmTreeRoot extends AlarmTreeRoot {
 
     @Override
     public synchronized int getElementCount() {
-        int count = 0;
+        int count = 1;   // count the root as well
         synchronized (subRoots) {
             for (AlarmTreeRoot root : subRoots) count += root.getElementCount();
         }
         return count;
-    }
-
-    @Override
-    public AlarmTreePosition getPosition() {
-        return AlarmTreePosition.Root;
     }
 
     @Override
@@ -65,7 +59,7 @@ public class CompositeAlarmTreeRoot extends AlarmTreeRoot {
 
     @Override
     public AlarmTreeItem getChild(final int i) {
-        return subRoots.size() <= i ? null : subRoots.get(i);
+        return subRoots.get(i);
     }
 
     @Override
@@ -85,11 +79,10 @@ public class CompositeAlarmTreeRoot extends AlarmTreeRoot {
 
     @Override
     public void acknowledge(final boolean acknowledge) {
-        synchronized (subRoots)
-        {
-            final int n = getChildCount();
-            for (int i=0; i<n; ++i)
-                getChild(i).acknowledge(acknowledge);
+        synchronized (subRoots) {
+            for (final AlarmTreeRoot root : subRoots) {
+                root.acknowledge(acknowledge);
+            }
         }
     }
 
