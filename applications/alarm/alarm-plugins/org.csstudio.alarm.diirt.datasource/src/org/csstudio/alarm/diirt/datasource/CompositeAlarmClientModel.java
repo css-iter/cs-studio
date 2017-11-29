@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.csstudio.alarm.beast.Messages;
 import org.csstudio.alarm.beast.client.AADataStructure;
 import org.csstudio.alarm.beast.client.AlarmTreeItem;
 import org.csstudio.alarm.beast.client.AlarmTreePV;
@@ -19,6 +21,7 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
 
     private CompositeAlarmTreeRoot compositeRoot;
     private final List<AlarmClientModel> models;
+    private volatile boolean allLoaded;
 
     /**
      * @param configName the fake composite configuration name.
@@ -27,6 +30,7 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
         super(configName);
         compositeRoot = new CompositeAlarmTreeRoot(configName);
         models = Collections.synchronizedList(new ArrayList<>());
+        allLoaded = false;
     }
 
     @Override
@@ -87,7 +91,14 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
 
     @Override
     synchronized public AlarmTreeRoot getConfigTree() {
+        if (!allLoaded) return createPseudoAlarmTree(Messages.AlarmClientModel_NotInitialized);
         return compositeRoot;
+    }
+
+    private AlarmTreeRoot createPseudoAlarmTree(String info) {
+        AlarmTreeRoot  configTree = new AlarmTreeRoot("Pseudo", -1);
+        new AlarmTreeItem(configTree, info, 0);
+        return configTree;
     }
 
     @Override
@@ -202,5 +213,13 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
     public synchronized void dump() {
         // Ignored silently since this does not make sense on composite tree
         LOG.log(Level.FINE, "Dump not supported on Composite Alarm Client Model.");
+    }
+
+    public boolean isAllLoaded() {
+        return allLoaded;
+    }
+
+    public void setAllLoaded(boolean allLaoded) {
+        this.allLoaded = allLaoded;
     }
 }

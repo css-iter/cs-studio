@@ -1064,7 +1064,7 @@ public class AlarmClientModel
      *  @param info Info that will show as dummy alarm tree item
      *  @return Pseudo alarm tree
      */
-    protected synchronized void createPseudoAlarmTree(final String info)
+    private synchronized void createPseudoAlarmTree(final String info)
     {
         config_tree = new AlarmTreeRoot("Pseudo", -1);
         new AlarmTreeItem(config_tree, info, 0);
