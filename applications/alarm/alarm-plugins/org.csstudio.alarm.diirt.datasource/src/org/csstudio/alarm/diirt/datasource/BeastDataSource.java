@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,7 +29,6 @@ import org.diirt.datasource.ChannelHandler;
 import org.diirt.datasource.DataSource;
 import org.diirt.datasource.vtype.DataTypeSupport;
 
-import com.thoughtworks.xstream.InitializationException;
 /**
  * @author Kunal Shroff
  *
@@ -46,6 +46,8 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
 
     private Map<String, List<Consumer>> channelConsumers = Collections.synchronizedMap(new HashMap<String, List<Consumer>>());
     private Map<String, AlarmClientModel> models = Collections.synchronizedMap(new HashMap<String, AlarmClientModel>());
+    private AtomicInteger loaded;
+    private AtomicInteger toLoad;
 
     private Executor executor = Executors.newScheduledThreadPool(4);
 
@@ -53,17 +55,33 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
 
     private BeastDataSourceConfiguration configuration;
 
+    private BeastAlarmClientModelListener modelListener;
+
+    private CompositeAlarmClientModel compositeModel;
+
     static {
         // Install type support for the types it generates.
         DataTypeSupport.install();
     }
 
     private class BeastAlarmClientModelListener implements AlarmClientModelListener{
+        private BeastDataSource parent;
+
+        BeastAlarmClientModelListener(BeastDataSource parent) {
+            this.parent = parent;
+        }
+
         @Override
         public void newAlarmConfiguration(AlarmClientModel model) {
             log.config("beast  datasource: new alarm configuration --- " + model);
-            synchronized (channelConsumers) {
-                for (String channelName : channelConsumers.keySet()) {
+            // new model loaded
+            parent.loaded.incrementAndGet();
+            parent.compositeModel.addAlarmClientModel(model);
+            if (parent.loaded.get() == parent.toLoad.get()) {
+                parent.compositeModel.setAllLoaded(true);
+            }
+            synchronized (parent.channelConsumers) {
+                for (String channelName : parent.channelConsumers.keySet()) {
                     BeastChannelHandler channel = (BeastChannelHandler) getChannels()
                             .get(channelHandlerLookupName(channelName));
                     channel.reconnect();
@@ -74,8 +92,8 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
         @Override
         public void serverTimeout(AlarmClientModel model) {
             log.warning("beast datasource: server timeout (server alive: " + model.isServerAlive() + ")");
-            synchronized (channelConsumers) {
-                for (String channelName : channelConsumers.keySet()) {
+            synchronized (parent.channelConsumers) {
+                for (String channelName : parent.channelConsumers.keySet()) {
                     BeastChannelHandler channel = (BeastChannelHandler) getChannels()
                             .get(channelHandlerLookupName(channelName));
                     // notify the ChannelHandler that we lost connection
@@ -95,8 +113,8 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
         public void newAlarmState(AlarmClientModel alarmModel, AlarmTreePV pv, boolean parent_changed) {
             if (pv != null) {
                 log.fine(pv.getPathName());
-                synchronized (channelConsumers) {
-                    channelConsumers.forEach((key, pathHandlers) -> {
+                synchronized (parent.channelConsumers) {
+                    parent.channelConsumers.forEach((key, pathHandlers) -> {
                         if (BeastTypeSupport.getStrippedChannelName(key).equals(pv.getPathName().substring(1))
                                 || BeastTypeSupport.getStrippedChannelName(key).equals(pv.getName())) {
                             if (pathHandlers != null) {
@@ -111,8 +129,8 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
                 AlarmTreeItem parent = pv.getParent();
                 while (parent != null) {
                     final String parentPath = parent.getPathName();
-                    synchronized (channelConsumers) {
-                        channelConsumers.forEach((key, pathHandlers) -> {
+                    synchronized (this.parent.channelConsumers) {
+                        this.parent.channelConsumers.forEach((key, pathHandlers) -> {
                             if (BeastTypeSupport.getStrippedChannelName(key).equals(parentPath.substring(1))) {
                                 if (pathHandlers != null) {
                                     for (Consumer consumer : pathHandlers) {
@@ -131,8 +149,8 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
             } else {
                 // The AlarmClientModel has recovered from a disconnection or is notifying us that the first
                 // messages have been received after initial connection.
-                synchronized (channelConsumers) {
-                    for (String channelName : channelConsumers.keySet()) {
+                synchronized (parent.channelConsumers) {
+                    for (String channelName : parent.channelConsumers.keySet()) {
                         BeastChannelHandler channel = (BeastChannelHandler) getChannels()
                                 .get(channelHandlerLookupName(channelName));
                         if (channel!=null)
@@ -146,6 +164,11 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
     public BeastDataSource(BeastDataSourceConfiguration configuration) {
         super(true);
         this.configuration = configuration;
+        loaded = new AtomicInteger(0);
+        toLoad = new AtomicInteger(-1);
+        compositeModel = new CompositeAlarmClientModel("Composite");        // XXX temporary name
+        // one global listener for all models
+        modelListener = new BeastAlarmClientModelListener(this);
         try {
 
             // Create an instance to the AlarmClientModel
@@ -154,7 +177,7 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
                     .thenAccept((model) -> {
                         this.model = model;
                         this.models.put(model.getConfigurationName(), model);
-                        this.model.addListener(new BeastAlarmClientModelListener());
+                        this.model.addListener(modelListener);
                     });
             typeSupport = new BeastTypeSupport();
 
@@ -250,17 +273,17 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
                 return alarmTreeItem;
             }
         } else {
-            throw new InitializationException("Model hasn't been created yet");
+            throw new InitializationException("Model hasn't been created yet: " + uri.getPath());
         }
     }
 
     private AlarmClientModel selectModel(URI uri) throws Exception {
         if (model == null) {
-            log.log(Level.WARNING, "NO Default. Abort!");
-            return null;  // no default. Abort
+            log.warning("NO Default model. Abort!");
+            return null;
         }
         final String decodedUri = URLDecoder.decode(uri.getPath(), "UTF-8");
-        //log.log(Level.INFO, "Models: " + models.keySet().toString());
+        log.log(Level.FINE, () -> "decodedUri: " + decodedUri);
         if (uri.getPath().contains("/")) {
             // Alarm root defined
             final String lookupName = channelHandlerLookupName(decodedUri);
@@ -270,8 +293,21 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
                 root = lookupName.substring(0, lookupName.indexOf('/'));
             else
                 root = lookupName;
-            if (model.getConfigurationName().equals(root)) return model;
-            return models.get(root);  // returns null if no such root is defined
+            log.log(Level.FINE, () -> "root: " + root);
+            if (model.getConfigurationName().equals(root)) {
+                log.fine("Returning default model.");
+                return model;
+            }
+            if (models.containsKey(root)) {
+                log.fine("Returning named model.");
+                return models.get(root);
+            }
+            if (root.equals(compositeModel.getConfigurationName())) {
+                log.fine("Returning composite model.");
+                return compositeModel;
+            }
+            log.fine("Root not found.");
+            return null;
         } else {
             // PV only - search models in the DIIRT defined order, but search default first.
             final String pvName = decodedUri.substring(decodedUri.lastIndexOf("/") + 1);
@@ -351,13 +387,14 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
 
         // now obtain all roots from it, and then see if you have anything else in the DIIRT configuration
         final String[] confNames = model.getConfigurationNames();
+        toLoad.set(confNames.length);
+        if (confNames.length == 1) compositeModel.setAllLoaded(true);   // there is only one model, and that one was just loaded.
         final List<String> diirtConfNames = new ArrayList<>(configuration.getConfigNames()); // original is unmodifiable
         for (final String confName : confNames) {
             try {
                 if (!models.containsKey(confName)) {
                     log.log(Level.FINER, () -> "Loading model: " + confName);
-                    final AlarmClientModel aModel = AlarmClientModel.getInstance(confName);
-                    aModel.addListener(new BeastAlarmClientModelListener());
+                    final AlarmClientModel aModel = AlarmClientModel.getInstance(confName, modelListener);
                     models.put(confName, aModel);
                 }
                 diirtConfNames.remove(confName);
