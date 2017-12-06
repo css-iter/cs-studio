@@ -38,7 +38,7 @@ public class GUIDemo
                     (screen.height-HEIGHT)/2, WIDTHS, HEIGHT);
 
             final Model model = new Model(MessageRDBIT.URL, MessageRDBIT.USER, MessageRDBIT.PASSWORD, MessageRDBIT.SCHEMA, 1000, DateTimeFormatter.ISO_LOCAL_DATE_TIME, shell);
-            new GUI(null, shell, model, null);
+            new GUI(null, shell, model, null, null, false, false);
 
             shell.open();
 
@@ -50,7 +50,7 @@ public class GUIDemo
                     display.sleep();
             display.dispose(); // !
         }
-        catch (Throwable ex)
+        catch (Exception ex)
         {
             ex.printStackTrace();
         }

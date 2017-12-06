@@ -26,6 +26,10 @@ public final class Messages extends NLS {
     public static String ModelUpdateError;
     public static String EditColumns;
     public static String PreferenceReadError;
+    public static String MaxMessages;
+    public static String SortingColumn;
+    public static String SortAscending;
+    public static String ColumnHeaders;
 
     static {
         NLS.initializeMessages(BUNDLE_NAME, Messages.class);

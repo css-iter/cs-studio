@@ -54,13 +54,14 @@ public class ColumnConfigurer extends TitleAreaDialog {
     private static final String RIGHT = "Forward24.gif";
     private static final String UP = "Up24.gif";
     private static final String DOWN = "Down24.gif";
+    private static final String ICONS_PATH = "icons/";
     private static final ImageRegistry IMAGES = new ImageRegistry(Display.getDefault());
     static {
-        String ICONS = "icons/";
-        IMAGES.put(LEFT, AbstractUIPlugin.imageDescriptorFromPlugin(Activator.ID, ICONS + LEFT));
-        IMAGES.put(RIGHT, AbstractUIPlugin.imageDescriptorFromPlugin(Activator.ID, ICONS + RIGHT));
-        IMAGES.put(UP, AbstractUIPlugin.imageDescriptorFromPlugin(Activator.ID, ICONS + UP));
-        IMAGES.put(DOWN, AbstractUIPlugin.imageDescriptorFromPlugin(Activator.ID, ICONS + DOWN));
+
+        IMAGES.put(LEFT, AbstractUIPlugin.imageDescriptorFromPlugin(Activator.ID, ICONS_PATH + LEFT));
+        IMAGES.put(RIGHT, AbstractUIPlugin.imageDescriptorFromPlugin(Activator.ID, ICONS_PATH + RIGHT));
+        IMAGES.put(UP, AbstractUIPlugin.imageDescriptorFromPlugin(Activator.ID, ICONS_PATH + UP));
+        IMAGES.put(DOWN, AbstractUIPlugin.imageDescriptorFromPlugin(Activator.ID, ICONS_PATH + DOWN));
     }
 
     private static class ContentProvider implements IStructuredContentProvider {
@@ -72,10 +73,12 @@ public class ColumnConfigurer extends TitleAreaDialog {
 
         @Override
         public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+            return;
         }
 
         @Override
         public void dispose() {
+            return;
         }
     }
 

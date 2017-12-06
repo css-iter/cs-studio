@@ -36,7 +36,7 @@ public class Model {
     private String start_spec = Preferences.getDefaultStart();
     private String end_spec = Preferences.getDefaultEnd();
     private MessagePropertyFilter filters[] = new MessagePropertyFilter[0];
-    private int max_properties;
+    private int max_messages;
     private DateTimeFormatter date_format;
     private GetMessagesJob message_job;
     private Shell shell;
@@ -55,16 +55,18 @@ public class Model {
      *            Database schema ending in "." or "" if not used
      * @param shell
      *            UI shell to display error dialog
+     * @param max_messages
+     *            Maximum number of messages.
      * @throws Exception
      *             on error
      */
     public Model(final String url, final String user, final String password, final String schema,
-            final int max_properties, final DateTimeFormatter date_format, final Shell shell) throws Exception {
+            final int max_messages, final DateTimeFormatter date_format, final Shell shell) throws Exception {
         this.url = url;
         this.user = user;
         this.password = password;
         this.schema = schema;
-        this.max_properties = max_properties;
+        this.max_messages = max_messages;
         this.date_format = date_format;
         this.shell = shell;
         this.errorCase = false;
@@ -97,8 +99,8 @@ public class Model {
     }
 
     /**
-     * Set model's time range. Model will retrieve messages for given time and other current settings in a background thread and
-     * then notify listeners.
+     * Set model's time range. Model will retrieve messages for given time and
+     * other current settings in a background thread and then notify listeners.
      *
      * @param start_spec
      *            Start time specification
@@ -120,8 +122,8 @@ public class Model {
     }
 
     /**
-     * Set model's filters. Model will retrieve messages for given filters and other current settings in a background thread and
-     * then notify listeners.
+     * Set model's filters. Model will retrieve messages for given filters and
+     * other current settings in a background thread and then notify listeners.
      *
      * @param filters
      *            Filters to use (<code>null</code> for 'no filters)
@@ -130,6 +132,25 @@ public class Model {
      */
     public void setFilters(final MessagePropertyFilter filters[]) throws Exception {
         this.filters = filters;
+        launchQuery();
+    }
+
+    /**
+     * @return Current max messages settings.
+     */
+    public int getMaxMessages() {
+        return max_messages;
+    }
+
+    /**
+     * Sets maximum number of messages that model will retrieve per query.
+     *
+     * @param max_messages
+     * @throws Exception
+     *             on error
+     */
+    public void setMaxMessages(final int max_messages) throws Exception {
+        this.max_messages = max_messages;
         launchQuery();
     }
 
@@ -152,7 +173,7 @@ public class Model {
         // Start new job
         final StartEndTimeParser times = new StartEndTimeParser(start_spec, end_spec);
         message_job = new GetMessagesJob(url, user, password, schema, times.getStart(), times.getEnd(), filters,
-                max_properties, date_format) {
+                max_messages, date_format) {
             @Override
             void gotMessages(final Message[] messages) {
                 if (messages == null)

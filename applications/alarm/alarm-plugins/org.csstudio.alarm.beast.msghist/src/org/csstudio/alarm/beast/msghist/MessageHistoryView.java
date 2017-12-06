@@ -13,8 +13,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.csstudio.alarm.beast.msghist.gui.ColumnConfigureAction;
 import org.csstudio.alarm.beast.msghist.gui.GUI;
+import org.csstudio.alarm.beast.msghist.gui.MaxMessagesConfigureAction;
 import org.csstudio.alarm.beast.msghist.gui.NewMessageHistoryAction;
 import org.csstudio.alarm.beast.msghist.gui.ShowFilterAction;
+import org.csstudio.alarm.beast.msghist.model.Message;
 import org.csstudio.alarm.beast.msghist.model.Model;
 import org.csstudio.security.preferences.SecurePreferences;
 import org.eclipse.core.runtime.Platform;
@@ -72,7 +74,7 @@ public class MessageHistoryView extends ViewPart {
 
             DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern(Preferences.getTimeFormat())
                     .withZone(ZoneId.systemDefault());
-            model = new Model(url, user, password, schema, Preferences.getMaxProperties(), timeFormat,
+            model = new Model(url, user, password, schema, Preferences.getMaxMessages(), timeFormat,
                     getSite().getShell());
             columns = Preferences.getPropertyColumns();
             createGUI();
@@ -90,7 +92,7 @@ public class MessageHistoryView extends ViewPart {
     private void createGUI() throws Exception {
         if (gui != null)
             gui.dispose();
-        gui = new GUI(getSite(), parent, model, columns);
+        gui = new GUI(getSite(), parent, model, columns, Message.SEQ, true, true);
         parent.layout();
 
         // Trigger update
@@ -102,6 +104,7 @@ public class MessageHistoryView extends ViewPart {
         menu.add(new NewMessageHistoryAction(this));
         menu.add(new ColumnConfigureAction(this));
         menu.add(new ShowFilterAction(this));
+        menu.add(new MaxMessagesConfigureAction(this));
     }
 
     public Model getModel() {

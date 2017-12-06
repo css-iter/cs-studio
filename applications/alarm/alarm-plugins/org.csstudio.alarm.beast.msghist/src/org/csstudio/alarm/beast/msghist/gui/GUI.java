@@ -33,6 +33,7 @@ import org.eclipse.jface.layout.TableColumnLayout;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
+import org.eclipse.jface.viewers.CellLabelProvider;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.ISelectionProvider;
@@ -136,8 +137,17 @@ public class GUI extends Composite implements ModelListener {
      *            Parent widget/shell
      * @param model
      *            Model to display in GUI
+     * @param columns
+     *            columns to display in GUI.
+     * @param defaultSortingColumn
+     *            default property used for sorting.
+     * @param sortAscending
+     *            default sorting direction.
+     * @param showHeaders
+     *            whether to show table header or not.
      */
-    public GUI(IWorkbenchPartSite site, final Composite parent, final Model model, PropertyColumnPreference[] columns) {
+    public GUI(IWorkbenchPartSite site, final Composite parent, final Model model, PropertyColumnPreference[] columns,
+            String defaultSortingProperty, boolean sortAscending, boolean showHeaders) {
         super(parent, SWT.NONE);
         this.model = model;
         this.imageAutoRefreshRun = AbstractUIPlugin.imageDescriptorFromPlugin(Activator.ID, "icons/pause.gif")
@@ -146,7 +156,7 @@ public class GUI extends Composite implements ModelListener {
                 .createImage();
         this.autoRefreshCurrentPeriod = Preferences.getAutoRefreshPeriod();
         try {
-            createGUI(columns);
+            createGUI(columns, defaultSortingProperty, sortAscending, showHeaders);
         } catch (Exception ex) {
             MessageDialog.openError(parent.getShell(), "Error", "Initialization error: " + ex.getMessage());
             return;
@@ -168,7 +178,9 @@ public class GUI extends Composite implements ModelListener {
             /*
              * (non-Javadoc)
              *
-             * @see org.eclipse.jface.util.IPropertyChangeListener#propertyChange (org.eclipse.jface.util.PropertyChangeEvent)
+             * @see
+             * org.eclipse.jface.util.IPropertyChangeListener#propertyChange
+             * (org.eclipse.jface.util.PropertyChangeEvent)
              */
             @Override
             public void propertyChange(PropertyChangeEvent propertyChangeEvent) {
@@ -221,8 +233,8 @@ public class GUI extends Composite implements ModelListener {
     }
 
     /**
-     * Update Model's time range, display exception in dialog box. If all goes well, GUI should update in response to model's
-     * update event.
+     * Update Model's time range, display exception in dialog box. If all goes
+     * well, GUI should update in response to model's update event.
      *
      * @param start_spec
      *            the start_spec
@@ -238,8 +250,8 @@ public class GUI extends Composite implements ModelListener {
     }
 
     /**
-     * Update Model's filter, display exception in dialog box. If all goes well, GUI should update in response to model's update
-     * event.
+     * Update Model's filter, display exception in dialog box. If all goes well,
+     * GUI should update in response to model's update event.
      */
     private void updateFilters() {
         final FilterDialog dlg = new FilterDialog(filter.getShell(), properties, model.getFilters());
@@ -260,7 +272,8 @@ public class GUI extends Composite implements ModelListener {
      * @throws Exception
      *             on error
      */
-    private void createGUI(PropertyColumnPreference[] columns) throws Exception {
+    private void createGUI(PropertyColumnPreference[] columns, String defaultSortingProperty, boolean sortAscending,
+            boolean showHeaders) throws Exception {
         GridLayout layout = new GridLayout();
         layout.numColumns = 8;
         setLayout(layout);
@@ -322,7 +335,7 @@ public class GUI extends Composite implements ModelListener {
         table_viewer = new TableViewer(table_parent,
                 SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.MULTI | SWT.VIRTUAL);
         final Table table = table_viewer.getTable();
-        table.setHeaderVisible(true);
+        table.setHeaderVisible(showHeaders);
         table.setLinesVisible(true);
 
         table_viewer.setContentProvider(new MessageContentProvider());
@@ -339,30 +352,38 @@ public class GUI extends Composite implements ModelListener {
             table_col.setText(columns[i].getName());
             table_col.setMoveable(true);
             table_layout.setColumnData(table_col, new ColumnWeightData(columns[i].getWeight(), columns[i].getSize()));
+
+            CellLabelProvider labelProvider;
+            SortingColumnSelector columnSelector;
+            final TableColumn col = view_col.getColumn();
             // Seq, ID columns are special
             if (properties[i].equalsIgnoreCase(Message.SEQ)) {
-                view_col.setLabelProvider(new SeqProvider());
+                labelProvider = new SeqProvider();
                 // Sort numerically by sequence
-                final TableColumn col = view_col.getColumn();
-                col.addSelectionListener(new SeqColumnSortingSelector(table_viewer, col));
+                columnSelector = new SeqColumnSortingSelector(table_viewer, col);
             } else if (properties[i].equalsIgnoreCase(Message.ID)) {
-                view_col.setLabelProvider(new IDProvider());
+                labelProvider = new IDProvider();
                 // Sort numerically by ID
-                final TableColumn col = view_col.getColumn();
-                col.addSelectionListener(new IDColumnSortingSelector(table_viewer, col));
+                columnSelector = new IDColumnSortingSelector(table_viewer, col);
             }
             // SEVERITY type columns have special color coding
             else if (properties[i].toLowerCase().indexOf(Message.SEVERITY.toLowerCase()) >= 0) {
-                view_col.setLabelProvider(new SeverityLabelProvider(properties[i], this));
+                labelProvider = new SeverityLabelProvider(properties[i], this);
                 // Sort alphabetically
-                final TableColumn col = view_col.getColumn();
-                col.addSelectionListener(new PropertyColumnSortingSelector(table_viewer, col, properties[i]));
-            } else // other columns display & sort property as string
-            {
-                view_col.setLabelProvider(new PropertyLabelProvider(properties[i]));
-                final TableColumn col = view_col.getColumn();
-                col.addSelectionListener(new PropertyColumnSortingSelector(table_viewer, col, properties[i]));
+                columnSelector = new PropertyColumnSortingSelector(table_viewer, col, properties[i]);
             }
+            // other columns display & sort property as string
+            else {
+                labelProvider = new PropertyLabelProvider(properties[i]);
+                columnSelector = new PropertyColumnSortingSelector(table_viewer, col, properties[i]);
+            }
+
+            view_col.setLabelProvider(labelProvider);
+            col.addSelectionListener(columnSelector);
+
+            // set default sorting column
+            if (properties[i].equalsIgnoreCase(defaultSortingProperty))
+                columnSelector.sort(!sortAscending);
         }
 
         table_viewer.setInput(model);

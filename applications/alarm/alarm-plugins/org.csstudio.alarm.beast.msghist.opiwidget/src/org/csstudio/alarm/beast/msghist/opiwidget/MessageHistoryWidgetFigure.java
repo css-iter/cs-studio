@@ -13,7 +13,8 @@ import org.eclipse.swt.widgets.Composite;
 
 /**
  *
- * <code>MessageHistoryWidgetFigure</code> is an implementation of the message history as a GEF Figure.
+ * <code>MessageHistoryWidgetFigure</code> is an implementation of the message
+ * history as a GEF Figure.
  *
  * @author Borut Terpinc
  *
@@ -38,7 +39,8 @@ public class MessageHistoryWidgetFigure extends AbstractSWTWidgetFigure<Composit
         MessageHistoryWidgetModel widgetModel = widgetEditPart.getWidgetModel();
 
         gui = new GUI(widgetEditPart.getSite(), parent, widgetEditPart.getMessageHistoryModel(),
-                widgetModel.getColumns());
+                widgetModel.getColumns(), widgetModel.getSortingColumn(), widgetModel.isSortAscending(),
+                widgetModel.isColumnHeaders());
         return gui;
 
     }

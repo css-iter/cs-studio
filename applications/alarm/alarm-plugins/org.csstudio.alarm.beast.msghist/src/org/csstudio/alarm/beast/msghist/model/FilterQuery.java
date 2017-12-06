@@ -25,6 +25,9 @@ public class FilterQuery {
     private static final String ALIAS_START_TIME = "START_TIME";
     private static final String ALIAS_END_TIME = "END_TIME";
 
+    private FilterQuery() {
+    }
+
     /**
      *
      * @return null if given string is a valid filtering query or an error string otherwise.

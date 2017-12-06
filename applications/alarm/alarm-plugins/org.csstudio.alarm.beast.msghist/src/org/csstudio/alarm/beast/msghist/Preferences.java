@@ -30,7 +30,7 @@ public class Preferences {
     public static final String COLUMNS = "prop_cols";
     public static final String START = "start";
     public static final String END = "end";
-    public static final String MAX_PROPERTIES = "max_properties";
+    public static final String MAX_MESSAGES = "max_messages";
     public static final String AUTO_REFRESH_PERIOD = "auto_refresh_period";
     public static final String TIME_FORMAT = "time_format";
 
@@ -127,16 +127,16 @@ public class Preferences {
     }
 
     /**
-     * Gets the max properties.
+     * Gets the max messages.
      *
-     * @return the max properties
+     * @return the max messages
      */
-    public static int getMaxProperties() {
+    public static int getMaxMessages() {
         final IPreferencesService service = Platform.getPreferencesService();
-        int max_properties = 100000;
+        int max_messages = 10000;
         if (service != null)
-            max_properties = service.getInt(Activator.ID, Preferences.MAX_PROPERTIES, max_properties, null);
-        return max_properties;
+            max_messages = service.getInt(Activator.ID, Preferences.MAX_MESSAGES, max_messages, null);
+        return max_messages;
     }
 
     /**

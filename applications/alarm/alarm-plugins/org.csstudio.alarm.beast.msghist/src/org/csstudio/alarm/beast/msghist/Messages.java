@@ -33,7 +33,7 @@ public class Messages extends NLS {
     public static String Filter_ValueTT;
     public static String MessageDetail;
     public static String MessageHistory;
-    public static String Pref_MaxProperties;
+    public static String Pref_MaxMessages;
     public static String Pref_Password;
     public static String Pref_Schema;
     public static String Pref_Starttime;
@@ -44,7 +44,7 @@ public class Messages extends NLS {
     public static String Pref_TimeFormat;
     public static String Property;
     public static String PropertyValue_TTFmt;
-    public static String ReachedMaxPropertiesFmt;
+    public static String ReachedMaxMessagesFmt;
     public static String SeqProvider_TTFmt;
     public static String ShowDetail;
     public static String TableColumnsEditor_Columns;
@@ -58,6 +58,11 @@ public class Messages extends NLS {
     public static String SelectFilterDialogTitle;
     public static String SelectFilterDialogMessage;
     public static String FilterInputError;
+    public static String SetMaxMessages;
+    public static String SetMaxMessagesDialogTitle;
+    public static String SetMaxMessagesDialogMessage;
+    public static String SetMaxMessagesInputError;
+    public static String SetMaxMessagesError;
     public static String ConfigureColumns;
     public static String ColumnConfigTitle;
     public static String ColumnConfigDescription;

@@ -11,7 +11,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.csstudio.alarm.beast.msghist.Activator;
-import org.csstudio.alarm.beast.msghist.Preferences;
 import org.csstudio.alarm.beast.msghist.model.FilterQuery;
 import org.csstudio.alarm.beast.msghist.model.Model;
 import org.csstudio.opibuilder.editparts.AbstractWidgetEditPart;
@@ -24,7 +23,8 @@ import org.eclipse.osgi.util.NLS;
 
 /**
  *
- * <code>MessageHistoryWidgetEditPart</code> is the edit part for the message history opi widget.
+ * <code>MessageHistoryWidgetEditPart</code> is the edit part for the message
+ * history opi widget.
  *
  * @author Borut Terpinc
  *
@@ -56,7 +56,8 @@ public class MessageHistoryWidgetEditPart extends AbstractWidgetEditPart {
     }
 
     /**
-     * Creates message history model from preferences and binds widget model's properties.
+     * Creates message history model from preferences and binds widget model's
+     * properties.
      */
     private void setUpModel() {
         try {
@@ -69,7 +70,7 @@ public class MessageHistoryWidgetEditPart extends AbstractWidgetEditPart {
             final String password = SecurePreferences.get(Activator.ID, "rdb_password", null);
             final String schema = service.getString(Activator.ID, "rdb_schema", null, null);
 
-            model = new Model(url, user, password, schema, Preferences.getMaxProperties(), widgetModel.getTimeFormat(),
+            model = new Model(url, user, password, schema, widgetModel.getMaxMessages(), widgetModel.getTimeFormat(),
                     getSite().getShell());
 
             // apply filter property to model
@@ -96,6 +97,9 @@ public class MessageHistoryWidgetEditPart extends AbstractWidgetEditPart {
 
     @Override
     protected void registerPropertyChangeHandlers() {
+        // TODO: bind propery change handlers where needed. After creating GUI
+        // setters for those properties, get rid of them in constructor, if not
+        // needed.
         return;
     }
 }
