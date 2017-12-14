@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.csstudio.simplepv.IPV;
 import org.csstudio.simplepv.IPVListener;
@@ -44,7 +45,7 @@ import org.eclipse.osgi.util.NLS;
  * An implementation of {@link IPV} using PVManager.
  *
  * @author Xihui Chen
- *
+ * @author Borut Terpinc
  */
 public class PVManagerPV implements IPV {
 
@@ -60,6 +61,10 @@ public class PVManagerPV implements IPV {
             exceptionHandler.handleException(ex);
         }
     }
+
+    private static final  Logger LOGGER = Activator.getLogger();
+    private static final  Level LOG_LEVEL = Preferences.getWriteLogLevel();
+    private static final  String LOG_MESSAGE_WRITE = Preferences.getLogMessage();
 
     private String name;
     private boolean valueBuffered;
@@ -346,10 +351,11 @@ public class PVManagerPV implements IPV {
         if (readOnly)
             throw new Exception(NLS.bind("The PV {0} was created for read only.", getName()));
         if (isFormula)
-            throw new Exception(NLS.bind("The PV {0} is a formula which is not allowed to write.",
-                    getName()));
+            throw new Exception(NLS.bind("The PV {0} is a formula which is not allowed to write.", getName()));
         if (pvWriter == null || pvWriter.isClosed())
             throw new Exception(NLS.bind("The PV {0} is not started yet or has been closed.", getName()));
+
+        writeToLog(new_value);
         pvWriter.write(new_value);
     }
 
@@ -418,14 +424,27 @@ public class PVManagerPV implements IPV {
                             }
                         }).sync();
         try {
-            if(latch.await(timeout, TimeUnit.MILLISECONDS))
+            if (latch.await(timeout, TimeUnit.MILLISECONDS)) {
+                writeToLog(value);
                 pvWriter.write(value);
+            }
             else
                 throw new Exception(NLS.bind("Failed to connect to the PV in {0} milliseconds.", timeout));
         }finally{
             pvWriter.close();
         }
         return result.get();
+    }
+
+    private void writeToLog(Object value) {
+
+       if (getName().contains("loc://")){
+            return;
+        }
+        if (getName().contains("sim://")){
+            return;
+        }
+        LOGGER.log(LOG_LEVEL, LOG_MESSAGE_WRITE, new Object[] { name, getValue(), value.toString() });
     }
 
     @Override
