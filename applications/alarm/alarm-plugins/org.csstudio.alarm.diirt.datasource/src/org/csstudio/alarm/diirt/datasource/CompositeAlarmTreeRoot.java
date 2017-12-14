@@ -29,6 +29,7 @@ public class CompositeAlarmTreeRoot extends AlarmTreeRoot {
 
     public synchronized void addAlarmTreeRoot(AlarmTreeRoot child) {
         subRoots.add(child);
+        addChild(child);
     }
 
     @Override
