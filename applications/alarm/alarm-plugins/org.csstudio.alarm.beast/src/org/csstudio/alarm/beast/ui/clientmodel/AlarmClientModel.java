@@ -111,16 +111,16 @@ public class AlarmClientModel
     /** Array of items which are currently in alarm
      *  <br><b>SYNC:</b> Access needs to synchronize on <code>this</code>
      */
-    private Set<AlarmTreePV> active_alarms = new HashSet<AlarmTreePV>();
+    private Set<AlarmTreePV> active_alarms = new HashSet<>();
 
     /** Array of items which are in alarm but acknowledged
      *  <br><b>SYNC:</b> Access needs to synchronize on <code>this</code>
      */
-    private Set<AlarmTreePV> acknowledged_alarms = new HashSet<AlarmTreePV>();
+    private Set<AlarmTreePV> acknowledged_alarms = new HashSet<>();
 
     /** Listeners who registered for notifications */
     final private CopyOnWriteArrayList<AlarmClientModelListener> listeners =
-        new CopyOnWriteArrayList<AlarmClientModelListener>();
+        new CopyOnWriteArrayList<>();
 
     /** Send events? */
     private boolean notify_listeners = true;
@@ -131,15 +131,21 @@ public class AlarmClientModel
     /** Indicates if the model accepts or denies a change of the configuration name */
     final private boolean allow_config_changes;
 
+    protected AlarmClientModel(final String config_name) {
+        this.config_name = config_name;
+        this.allow_config_changes = false;
+        createPseudoAlarmTree(Messages.AlarmClientModel_NotInitialized);
+    }
+
     /** Initialize client model */
-    private AlarmClientModel(final String config_name, boolean allow_config_changes) throws Exception
+    private AlarmClientModel(final String config_name, boolean allow_config_changes, AlarmClientModelConfigListener listener) throws Exception
     {
         this.config_name = config_name;
-        this.allow_config_changes = allow_config_changes;
+        this.allow_config_changes = false;  // XXX prevent config changes, all models are loaded anyhow.
         // Initial dummy alarm info
         createPseudoAlarmTree(Messages.AlarmClientModel_NotInitialized);
 
-        new ReadConfigJob(this).schedule();
+        new ReadConfigJob(this, listener).schedule();
     }
 
     /** Obtain the shared instance.
@@ -152,6 +158,20 @@ public class AlarmClientModel
      */
     public static AlarmClientModel getInstance(final String config_name) throws Exception
     {
+        return getInstance(config_name, null);
+    }
+
+    /** Obtain the shared instance.
+     *  <p>
+     *  Increments the reference count.
+     *  @see #release()
+     *  @param config_name Name of alarm tree root, raise an Exception if null
+     *  @param listener
+     *  @return Alarm client model instance
+     *  @throws Exception on error
+     */
+    public static AlarmClientModel getInstance(final String config_name, AlarmClientModelConfigListener listener) throws Exception
+    {
         if(config_name == null)
             throw new Exception("Configuration name can't be null");
         AlarmClientModel instance = null;
@@ -163,13 +183,14 @@ public class AlarmClientModel
                 }
             }
             if (instance == null) {
-                instance = new AlarmClientModel(config_name,false);
+                instance = new AlarmClientModel(config_name, false, listener);
                 INSTANCES.add(instance);
             }
         }
         instance.references.incrementAndGet();
         return instance;
     }
+
 
     /**
      * Obtain the shared instance for the default alarm tree root. This instance allows
@@ -182,14 +203,30 @@ public class AlarmClientModel
      */
     public static AlarmClientModel getInstance() throws Exception
     {
+        return getInstance((AlarmClientModelConfigListener) null);
+    }
+
+    /**
+     * Obtain the shared instance for the default alarm tree root. This instance allows
+     * changing the configuration name after the model was created.
+     *  <p>
+     *  Increments the reference count.
+     *  @see #release()
+     *  @param listener
+     *  @return Alarm client model instance
+     *  @throws Exception on error
+     */
+    public static AlarmClientModel getInstance(AlarmClientModelConfigListener listener) throws Exception
+    {
         synchronized(INSTANCES) {
             if (default_instance == null) {
-                default_instance = new AlarmClientModel(Preferences.getAlarmTreeRoot(),true);
+                default_instance = new AlarmClientModel(Preferences.getAlarmTreeRoot(), true, listener);
             }
         }
         default_instance.references.incrementAndGet();
         return default_instance;
     }
+
 
     /** Must be called to release model when no longer used.
      *  <p>

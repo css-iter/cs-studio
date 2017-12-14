@@ -22,6 +22,7 @@ import org.csstudio.opibuilder.editparts.AbstractLayoutEditpart;
 import org.csstudio.opibuilder.editparts.AbstractLinkingContainerEditpart;
 import org.csstudio.opibuilder.editparts.ExecutionMode;
 import org.csstudio.opibuilder.model.AbstractContainerModel;
+import org.csstudio.opibuilder.model.AbstractLinkingContainerModel;
 import org.csstudio.opibuilder.model.AbstractWidgetModel;
 import org.csstudio.opibuilder.model.ConnectionModel;
 import org.csstudio.opibuilder.model.DisplayModel;
@@ -138,7 +139,7 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
             }
         };
 
-        setPropertyChangeHandler(LinkingContainerModel.PROP_GROUP_NAME, handler);
+        setPropertyChangeHandler(AbstractLinkingContainerModel.PROP_GROUP_NAME, handler);
 
         handler = new IWidgetPropertyChangeHandler() {
             @Override
@@ -212,7 +213,7 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
         //This need to be executed after GUI created.
         if(getWidgetModel().getDisplayModel() == null) {
             IPath path = resolveMacros(getWidgetModel().getOPIFilePath());
-            log.info(path.toString());
+            log.log(Level.FINE, () -> path.toString());
 
             final DisplayModel tempDisplayModel = new DisplayModel(path);
             getWidgetModel().setDisplayModel(tempDisplayModel);
@@ -374,7 +375,7 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
             if(originalPoints != null)
                 originalPoints.clear();
             else
-                originalPoints = new HashMap<ConnectionModel, PointList>();
+                originalPoints = new HashMap<>();
         }
 
         for (ConnectionModel conn : connectionList) {
@@ -411,7 +412,7 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
     public void layout() {
         AbstractLayoutEditpart layoutter = getLayoutWidget();
         if(layoutter != null && layoutter.getWidgetModel().isEnabled()){
-            List<AbstractWidgetModel> modelChildren = new ArrayList<AbstractWidgetModel>();
+            List<AbstractWidgetModel> modelChildren = new ArrayList<>();
             for(Object child : getChildren()){
                 if(child instanceof AbstractBaseEditPart &&
                         !(child instanceof AbstractLayoutEditpart)){
