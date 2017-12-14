@@ -180,7 +180,7 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
                         this.model.addListener(modelListener);
                     });
             typeSupport = new BeastTypeSupport();
-
+            compositeModel.addListener(modelListener);
         } catch (Exception e) {
             e.printStackTrace();
         }

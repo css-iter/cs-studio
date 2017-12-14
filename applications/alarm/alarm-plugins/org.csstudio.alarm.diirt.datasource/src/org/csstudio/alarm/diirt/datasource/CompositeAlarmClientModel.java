@@ -3,10 +3,14 @@ package org.csstudio.alarm.diirt.datasource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.csstudio.alarm.beast.Activator;
 import org.csstudio.alarm.beast.Messages;
 import org.csstudio.alarm.beast.client.AADataStructure;
 import org.csstudio.alarm.beast.client.AlarmTreeItem;
@@ -15,6 +19,7 @@ import org.csstudio.alarm.beast.client.AlarmTreeRoot;
 import org.csstudio.alarm.beast.client.GDCDataStructure;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModel;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelConfigListener;
+import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelListener;
 
 public class CompositeAlarmClientModel extends AlarmClientModel {
     private static final Logger LOG = Logger.getLogger(CompositeAlarmClientModel.class.getCanonicalName());
@@ -22,6 +27,43 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
     private CompositeAlarmTreeRoot compositeRoot;
     private final List<AlarmClientModel> models;
     private volatile boolean allLoaded;
+    private final Set<String> disconnectedModels;
+    // register this listener to all the children so that we can use the notifications for the root
+    private final AlarmClientModelListener childrenListener;
+    /** Listeners who registered for notifications */
+    final private List<AlarmClientModelListener> listeners =  new CopyOnWriteArrayList<>();
+
+    private static class ChildrenModelListener implements AlarmClientModelListener {
+        private final CompositeAlarmClientModel parent;
+
+        private ChildrenModelListener(CompositeAlarmClientModel parent) {
+            this.parent = parent;
+        }
+
+        @Override
+        public void newAlarmConfiguration(AlarmClientModel model) {
+            LOG.log(Level.FINE, () -> "New config for model " + model.getConfigurationName());
+            parent.compositeNewConfig();
+        }
+
+        @Override
+        public void serverTimeout(AlarmClientModel model) {
+            LOG.log(Level.FINE, () -> "Server timeout for model " + model.getConfigurationName());
+            parent.compositeServerTimeout(model.getConfigurationName());
+        }
+
+        @Override
+        public void serverModeUpdate(AlarmClientModel model, boolean maintenance_mode) {
+            LOG.log(Level.FINE, () -> "Mode change for model " + model.getConfigurationName());
+            parent.compositeModeUpdate(model.getConfigurationName());
+        }
+
+        @Override
+        public void newAlarmState(AlarmClientModel model, AlarmTreePV pv, boolean parent_changed) {
+            LOG.log(Level.FINE, () -> "New alarm state update for model " + model.getConfigurationName());
+            parent.compositeNewAlarmState(pv, parent_changed);
+        }
+    }
 
     /**
      * @param configName the fake composite configuration name.
@@ -29,8 +71,10 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
     public CompositeAlarmClientModel(final String configName) {
         super(configName);
         compositeRoot = new CompositeAlarmTreeRoot(configName);
-        models = Collections.synchronizedList(new ArrayList<>());
+        models = new CopyOnWriteArrayList<>();
         allLoaded = false;
+        childrenListener = new ChildrenModelListener(this);
+        disconnectedModels = Collections.synchronizedSet(new HashSet<>());
     }
 
     @Override
@@ -44,7 +88,16 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
      */
     public synchronized void addAlarmClientModel(AlarmClientModel child) {
         models.add(child);
+        child.addListener(childrenListener);
         compositeRoot.addAlarmTreeRoot(child.getConfigTree());
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        for (final AlarmClientModel child : models) {
+            child.removeListener(childrenListener);
+        }
+        super.finalize();
     }
 
     @Override
@@ -215,11 +268,91 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
         LOG.log(Level.FINE, "Dump not supported on Composite Alarm Client Model.");
     }
 
+    @Override
+    public void addListener(final AlarmClientModelListener listener) {
+        listeners.add(listener);
+        LOG.log(Level.FINER, () -> "Listener added. n=" + listeners.size());
+    }
+
+    @Override
+    public void removeListener(final AlarmClientModelListener listener) {
+        listeners.remove(listener);
+        LOG.log(Level.FINER, () -> "Listener removed. n=" + listeners.size());
+    }
+
     public boolean isAllLoaded() {
         return allLoaded;
     }
 
     public void setAllLoaded(boolean allLaoded) {
         this.allLoaded = allLaoded;
+    }
+
+    // Inform listeners about server timeout
+    private void compositeServerTimeout(String configName) {
+        // The root is disconnected only if all children are disconnected
+        disconnectedModels.add(configName);
+        if (disconnectedModels.size() >= models.size()) {
+            LOG.log(Level.WARNING, "All Alarm Client Models are diconnected from the JMS server.");
+            for (AlarmClientModelListener listener : listeners) {
+                try {
+                    listener.serverTimeout(this);
+                } catch (Throwable ex) {
+                    Activator.getLogger().log(Level.WARNING, "Server timeout notification error", ex);
+                }
+            }
+        }
+    }
+
+    // Inform listeners that server is OK and in which mode
+    private void compositeModeUpdate(String configName) {
+        disconnectedModels.remove(configName);
+        // composite can never go into maintenance mode
+        for (AlarmClientModelListener listener : listeners) {
+            try {
+                // never in maintenance mode
+                listener.serverModeUpdate(this, false);
+            } catch (Throwable ex) {
+                Activator.getLogger().log(Level.WARNING, "Model update notification error", ex);
+            }
+        }
+    }
+
+    // Inform listeners about overall change to alarm tree configuration:
+    //   Items added, removed.
+    private void compositeNewConfig() {
+        for (AlarmClientModelListener listener : listeners) {
+            try {
+                listener.newAlarmConfiguration(this);
+            } catch (Throwable ex) {
+                Activator.getLogger().log(Level.WARNING, "Model config notification error", ex);
+            }
+        }
+    }
+
+    /*  Inform listeners about change in alarm state.
+     *
+     *  Typically, this is invoked with the PV that changed state.
+     *  May be called with a 'null' PV to indicate that messages were received
+     *  after a server timeout.
+     *
+     *  pv                  PV that might have changed the alarm state or 'null'
+     *  parent_changed    'true' if a parent item was updated as well
+     */
+    private void compositeNewAlarmState(final AlarmTreePV pv, final boolean parent_changed) {
+        for (AlarmClientModelListener listener : listeners) {
+            try {
+                final boolean changed = compositeRoot.maximizeSeverity();
+                if (changed) {
+                    LOG.log(Level.FINE, () -> String.format("Current Severity: %s, Severity: %s, Message: %s",
+                            compositeRoot.getCurrentSeverity().toString(),
+                            compositeRoot.getSeverity().toString(),
+                            compositeRoot.getMessage()));
+                }
+                listener.newAlarmState(this, pv, true);
+            } catch (Throwable ex) {
+                Activator.getLogger().log(Level.WARNING, "Alarm update notification error", ex);
+            }
+        }
     }
 }
