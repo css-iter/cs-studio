@@ -11,7 +11,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModel;
-import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelConfigListener;
 import org.csstudio.apputil.ui.swt.DropdownToolbarAction;
 import org.eclipse.swt.widgets.Composite;
 
@@ -19,24 +18,24 @@ import org.eclipse.swt.widgets.Composite;
  *  and allows selection of a different alarm configuration
  *  @author Kay Kasemir
  */
-public class SelectConfigurationAction extends DropdownToolbarAction implements AlarmClientModelConfigListener
+public class SelectConfigurationAction extends DropdownToolbarAction /* implements AlarmClientModelConfigListener */
 {
     final private Composite parent;
-    final private AlarmClientModel model;
+    private ModelProvider modelProvider;
 
-    public SelectConfigurationAction(final Composite parent, final AlarmClientModel model)
+    public SelectConfigurationAction(final Composite parent, final ModelProvider modelProvider)
     {
-        super(model.getConfigurationName(), Messages.SelectAlarmConfiguration);
+        super(modelProvider.getModel().getConfigurationName(), Messages.SelectAlarmConfiguration);
         this.parent = parent;
-        this.model = model;
-        setSelection(model.getConfigurationName());
+        this.modelProvider = modelProvider;
+        setSelection(modelProvider.getModel().getConfigurationName());
     }
 
     /** {@inheritDoc} */
     @Override
     public String[] getOptions()
     {
-        return model.getConfigurationNames();
+        return modelProvider.getModel().getConfigurationNames();
     }
 
     /** {@inheritDoc} */
@@ -46,9 +45,13 @@ public class SelectConfigurationAction extends DropdownToolbarAction implements 
         // Use item text to set model name
         try
         {
+            modelProvider.setModel(AlarmClientModel.getInstance(option));
+            setText(option);
+            /*
             if (model.setConfigurationName(option, SelectConfigurationAction.this))
                 // Prohibit more changes while loading new config
                 setEnabled(false);
+            */
         }
         catch (Exception ex)
         {
@@ -56,7 +59,7 @@ public class SelectConfigurationAction extends DropdownToolbarAction implements 
         }
     }
 
-    /** @see AlarmClientModelConfigListener */
+    /*
     @Override
     public void newAlarmConfiguration(final AlarmClientModel model)
     {
@@ -84,4 +87,5 @@ public class SelectConfigurationAction extends DropdownToolbarAction implements 
             }
         });
     }
+    */
 }
