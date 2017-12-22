@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,6 +33,11 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
     private final AlarmClientModelListener childrenListener;
     /** Listeners who registered for notifications */
     final private List<AlarmClientModelListener> listeners =  new CopyOnWriteArrayList<>();
+
+    private AtomicBoolean configLoopPrevention;
+    private AtomicBoolean timeoutLoopPrevention;
+    private AtomicBoolean modeLoopPrevention;
+    private AtomicBoolean alarmLoopPrevention;
 
     private static class ChildrenModelListener implements AlarmClientModelListener {
         private final CompositeAlarmClientModel parent;
@@ -75,6 +81,10 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
         allLoaded = false;
         childrenListener = new ChildrenModelListener(this);
         disconnectedModels = Collections.synchronizedSet(new HashSet<>());
+        configLoopPrevention = new AtomicBoolean();
+        timeoutLoopPrevention = new AtomicBoolean();
+        modeLoopPrevention = new AtomicBoolean();
+        alarmLoopPrevention = new AtomicBoolean();
     }
 
     @Override
@@ -290,6 +300,8 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
 
     // Inform listeners about server timeout
     private void compositeServerTimeout(String configName) {
+        if (!timeoutLoopPrevention.compareAndSet(false, true))
+            return; // already in the loop
         // The root is disconnected only if all children are disconnected
         disconnectedModels.add(configName);
         if (disconnectedModels.size() >= models.size()) {
@@ -302,10 +314,13 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
                 }
             }
         }
+        timeoutLoopPrevention.set(false);
     }
 
     // Inform listeners that server is OK and in which mode
     private void compositeModeUpdate(String configName) {
+        if (!modeLoopPrevention.compareAndSet(false, true))
+            return; // already in the loop
         disconnectedModels.remove(configName);
         // composite can never go into maintenance mode
         for (AlarmClientModelListener listener : listeners) {
@@ -316,11 +331,14 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
                 Activator.getLogger().log(Level.WARNING, "Model update notification error", ex);
             }
         }
+        modeLoopPrevention.set(false);
     }
 
     // Inform listeners about overall change to alarm tree configuration:
     //   Items added, removed.
     private void compositeNewConfig() {
+        if (!configLoopPrevention.compareAndSet(false, true))
+            return; // already in the loop
         for (AlarmClientModelListener listener : listeners) {
             try {
                 listener.newAlarmConfiguration(this);
@@ -328,6 +346,7 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
                 Activator.getLogger().log(Level.WARNING, "Model config notification error", ex);
             }
         }
+        configLoopPrevention.set(false);
     }
 
     /*  Inform listeners about change in alarm state.
@@ -340,6 +359,8 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
      *  parent_changed    'true' if a parent item was updated as well
      */
     private void compositeNewAlarmState(final AlarmTreePV pv, final boolean parent_changed) {
+        if (!alarmLoopPrevention.compareAndSet(false, true))
+            return; // already in the loop
         for (AlarmClientModelListener listener : listeners) {
             try {
                 final boolean changed = compositeRoot.maximizeSeverity();
@@ -354,5 +375,6 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
                 Activator.getLogger().log(Level.WARNING, "Alarm update notification error", ex);
             }
         }
+        alarmLoopPrevention.set(false);
     }
 }
