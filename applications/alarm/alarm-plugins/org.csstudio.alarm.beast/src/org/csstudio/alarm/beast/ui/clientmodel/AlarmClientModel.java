@@ -14,6 +14,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.csstudio.alarm.beast.Activator;
 import org.csstudio.alarm.beast.AlarmTreePath;
@@ -66,6 +67,7 @@ import org.eclipse.osgi.util.NLS;
 @SuppressWarnings("nls")
 public class AlarmClientModel
 {
+    private static final Logger LOG = Activator.getLogger();
     private static AlarmClientModel default_instance;
     // shared instances
     private static final Set<AlarmClientModel> INSTANCES = Collections.newSetFromMap(new WeakHashMap<>());
@@ -588,6 +590,11 @@ public class AlarmClientModel
             server_alive = true;
             fireNewAlarmState(null, true);
         }
+        LOG.log(Level.FINER, () ->
+                String.format("%s maintenance mode. current=%s, new=%s",
+                        config_name,
+                        Boolean.toString(this.maintenance_mode),
+                        Boolean.toString(maintenance_mode)));
         // Change in maintenance mode?
         if (this.maintenance_mode  != maintenance_mode)
         {

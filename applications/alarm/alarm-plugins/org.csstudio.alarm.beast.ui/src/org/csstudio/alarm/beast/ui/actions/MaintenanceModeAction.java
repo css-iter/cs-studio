@@ -46,14 +46,16 @@ public class MaintenanceModeAction extends Action implements AlarmClientModelLis
 
     public void setModel(AlarmClientModel model)
     {
-        if (this.model != null)
-            this.model.removeListener(this);
-        // Reflect mode of model right now, then monitor for mode changes
-        this.model = model;
-        if (this.model != null)
-        {
-            reflectModelMode(this.model.inMaintenanceMode());
-            this.model.addListener(this);
+        synchronized (this) {
+            if (this.model != null)
+                this.model.removeListener(this);
+            // Reflect mode of model right now, then monitor for mode changes
+            this.model = model;
+            if (this.model != null)
+            {
+                reflectModelMode(this.model.inMaintenanceMode());
+                this.model.addListener(this);
+            }
         }
     }
 
@@ -76,19 +78,21 @@ public class MaintenanceModeAction extends Action implements AlarmClientModelLis
     @Override
     public void run()
     {
-        if (model.inMaintenanceMode())
-        {
-            if (!MessageDialog.openConfirm(null, Messages.MaintenanceMode,
-                                           Messages.MaintenanceModeDisableMsg))
-                return;
-            model.requestMaintenanceMode(false);
-        }
-        else
-        {
-            if (!MessageDialog.openConfirm(null, Messages.MaintenanceMode,
-                                           Messages.MaintenanceModeEnableMsg))
-                return;
-            model.requestMaintenanceMode(true);
+        synchronized (this) {
+            if (model.inMaintenanceMode())
+            {
+                if (!MessageDialog.openConfirm(null, Messages.MaintenanceMode,
+                                               Messages.MaintenanceModeDisableMsg))
+                    return;
+                model.requestMaintenanceMode(false);
+            }
+            else
+            {
+                if (!MessageDialog.openConfirm(null, Messages.MaintenanceMode,
+                                               Messages.MaintenanceModeEnableMsg))
+                    return;
+                model.requestMaintenanceMode(true);
+            }
         }
     }
 

@@ -43,7 +43,9 @@ public class AlarmTreeView extends ViewPart implements ModelProvider
 
     private List<ModelChangeListener> listeners = new ArrayList<>();
 
-    private GUI gui = null;
+    private GUI gui;
+    private MaintenanceModeAction maintenanceModeAction;
+    private ConfigureItemAction configureItemAction;
 
     /** {@inheritDoc} */
     @Override
@@ -91,7 +93,8 @@ public class AlarmTreeView extends ViewPart implements ModelProvider
         }
         if (model.isWriteAllowed())
         {
-            toolbar.add(new MaintenanceModeAction(model));
+            maintenanceModeAction = new MaintenanceModeAction(model);
+            toolbar.add(maintenanceModeAction);
             toolbar.add(new Separator());
         }
 
@@ -106,7 +109,8 @@ public class AlarmTreeView extends ViewPart implements ModelProvider
             // On Linux/GTK, however, buttons vanish at the right edge of the view.
             // Tried SWT.Resize listener with toolbar.update(true), no improvement.
             toolbar.add(new DebugAction(shell, this));
-            toolbar.add(new ConfigureItemAction(shell, model, gui.getTreeViewer()));
+            configureItemAction = new ConfigureItemAction(shell, model, gui.getTreeViewer());
+            toolbar.add(configureItemAction);
             toolbar.add(new AcknowledgeAction(true, gui.getTreeViewer()));
             toolbar.add(new AcknowledgeAction(false, gui.getTreeViewer()));
             toolbar.add(new Separator());
@@ -145,6 +149,8 @@ public class AlarmTreeView extends ViewPart implements ModelProvider
             }
         }
         this.model = model;
+        if (maintenanceModeAction != null) maintenanceModeAction.setModel(model);
+        if (configureItemAction != null) configureItemAction.setModel(model);
     }
 
     @Override
