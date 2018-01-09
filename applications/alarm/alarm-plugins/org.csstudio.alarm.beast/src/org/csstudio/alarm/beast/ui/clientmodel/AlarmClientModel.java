@@ -14,6 +14,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.csstudio.alarm.beast.Activator;
 import org.csstudio.alarm.beast.AlarmTreePath;
@@ -66,9 +67,12 @@ import org.eclipse.osgi.util.NLS;
 @SuppressWarnings("nls")
 public class AlarmClientModel
 {
+    private static final Logger LOG = Activator.getLogger();
     private static AlarmClientModel default_instance;
     // shared instances
     private static final Set<AlarmClientModel> INSTANCES = Collections.newSetFromMap(new WeakHashMap<>());
+
+    private static final Set<AlarmClientModelSelectionListener> SELECTION_LISTENERS = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
 
     /** Reference count for instance */
     private AtomicInteger references = new AtomicInteger();
@@ -131,11 +135,17 @@ public class AlarmClientModel
     /** Indicates if the model accepts or denies a change of the configuration name */
     final private boolean allow_config_changes;
 
+    protected AlarmClientModel(final String config_name) {
+        this.config_name = config_name;
+        this.allow_config_changes = false;
+        createPseudoAlarmTree(Messages.AlarmClientModel_NotInitialized);
+    }
+
     /** Initialize client model */
     private AlarmClientModel(final String config_name, boolean allow_config_changes, AlarmClientModelConfigListener listener) throws Exception
     {
         this.config_name = config_name;
-        this.allow_config_changes = allow_config_changes;
+        this.allow_config_changes = false;
         // Initial dummy alarm info
         createPseudoAlarmTree(Messages.AlarmClientModel_NotInitialized);
 
@@ -182,6 +192,7 @@ public class AlarmClientModel
             }
         }
         instance.references.incrementAndGet();
+        instance.notifyAlarmClientModelSelection(null, null);
         return instance;
     }
 
@@ -218,9 +229,9 @@ public class AlarmClientModel
             }
         }
         default_instance.references.incrementAndGet();
+        default_instance.notifyAlarmClientModelSelection(null, null);
         return default_instance;
     }
-
 
     /** Must be called to release model when no longer used.
      *  <p>
@@ -279,6 +290,26 @@ public class AlarmClientModel
     {
         internalRelease();
         super.finalize();
+    }
+
+    /**
+     * Notifies all listeners, that the {@link AlarmClientModel} was changed to <code>this</code> model.
+     * @param id - the ID of the widget triggering the change. Can be <code>null</code>
+     * @param oldModel - the previous {@link AlarmClientModel}. Can be <code>null</code>.
+     */
+    public void notifyAlarmClientModelSelection(String id, AlarmClientModel oldModel) {
+        synchronized (SELECTION_LISTENERS) {
+            for (final AlarmClientModelSelectionListener listener : SELECTION_LISTENERS)
+                listener.alarmModelSelection(id, oldModel, this);
+        }
+    }
+
+    public void addAlarmModelSelectionListener(AlarmClientModelSelectionListener listener) {
+        if (listener != null) SELECTION_LISTENERS.add(listener);
+    }
+
+    public void removeAlarmModelSelectionListener(AlarmClientModelSelectionListener listener) {
+        SELECTION_LISTENERS.remove(listener);
     }
 
     /** List all configuration 'root' element names, i.e. names
@@ -582,6 +613,11 @@ public class AlarmClientModel
             server_alive = true;
             fireNewAlarmState(null, true);
         }
+        LOG.log(Level.FINER, () ->
+                String.format("%s maintenance mode. current=%s, new=%s",
+                        config_name,
+                        Boolean.toString(this.maintenance_mode),
+                        Boolean.toString(maintenance_mode)));
         // Change in maintenance mode?
         if (this.maintenance_mode  != maintenance_mode)
         {
