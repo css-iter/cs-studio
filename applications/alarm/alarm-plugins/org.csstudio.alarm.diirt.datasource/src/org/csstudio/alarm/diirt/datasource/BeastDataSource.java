@@ -312,7 +312,7 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
                 log.fine("Returning composite model.");
                 return compositeModel;
             }
-            log.fine("Root not found.");
+            log.log(Level.WARNING, () -> String.format("Root not found: %s", root));
             return null;
         } else {
             // PV only - search models in the DIIRT defined order, but search default first.

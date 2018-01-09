@@ -25,6 +25,7 @@ import org.csstudio.alarm.beast.ui.alarmtable.actions.SeparateCombineTablesActio
 import org.csstudio.alarm.beast.ui.alarmtable.actions.ShowFilterAction;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModel;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelListener;
+import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelSelectionListener;
 import org.csstudio.ui.util.dnd.ControlSystemDropTarget;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
@@ -50,10 +51,12 @@ import org.eclipse.ui.part.ViewPart;
  * @author Kay Kasemir
  * @author Jaka Bobnar - Combined/split alarm tables, configurable columns
  */
-public class AlarmTableView extends ViewPart
+public class AlarmTableView extends ViewPart implements AlarmClientModelSelectionListener
 {
     public static final int PROP_FILTER = 555444;
     public static final int PROP_FILTER_ITEM = 555445;
+
+    private static final Logger LOG = Logger.getLogger(Activator.ID);
 
     private static AtomicInteger secondaryId = new AtomicInteger(1);
 
@@ -144,6 +147,7 @@ public class AlarmTableView extends ViewPart
         {
             defaultModel = AlarmClientModel.getInstance();
             defaultModel.addListener(modelListener);
+            defaultModel.addAlarmModelSelectionListener(this);
             if (filterItemPath != null)
             {
                 model = AlarmClientModel.getInstance(getConfigNameFromPath(filterItemPath));
@@ -168,6 +172,7 @@ public class AlarmTableView extends ViewPart
             public void widgetDisposed(DisposeEvent e)
             {
                 releaseModel(defaultModel);
+                defaultModel.removeAlarmModelSelectionListener(AlarmTableView.this);
                 defaultModel = null;
                 releaseModel(model);
                 model = null;;
@@ -322,7 +327,7 @@ public class AlarmTableView extends ViewPart
      * Updated the filter item according to the selected filter type and filter item path. The view title
      * is also updated.
      */
-    private void updateFilterItem()
+    private synchronized void updateFilterItem()
     {
         AlarmClientModel activeModel = null;
         String name;
@@ -390,7 +395,7 @@ public class AlarmTableView extends ViewPart
         redoGUI();
     }
 
-    private boolean makeGUI()
+    private synchronized boolean makeGUI()
     {
         if (parent.isDisposed())
             return false;
@@ -519,7 +524,7 @@ public class AlarmTableView extends ViewPart
     /**
      * @return the alarm client model used by this table
      */
-    public AlarmClientModel getModel()
+    public synchronized AlarmClientModel getModel()
     {
         return filterType == FilterType.TREE ? defaultModel : model;
     }
@@ -559,5 +564,18 @@ public class AlarmTableView extends ViewPart
             name = name.substring(1);
         int idx = name.indexOf('/');
         return idx > 0 ? name.substring(0, idx) : name;
+    }
+
+    @Override
+    public synchronized void alarmModelSelection(String id, AlarmClientModel oldModel, AlarmClientModel newModel) {
+        LOG.log(Level.FINE,
+                () -> String.format("Model selection change: new=%s, active=%s",
+                        newModel.getConfigurationName(),
+                        defaultModel.getConfigurationName()));
+        if ((id == null && oldModel == null) || newModel == defaultModel) return;
+        releaseModel(defaultModel);
+        defaultModel = newModel;
+        updateFilterItem();
+        redoGUI();
     }
 }

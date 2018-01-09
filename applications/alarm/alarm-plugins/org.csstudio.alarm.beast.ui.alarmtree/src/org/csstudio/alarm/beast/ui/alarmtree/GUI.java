@@ -32,6 +32,7 @@ import org.csstudio.alarm.beast.ui.actions.RemoveComponentAction;
 import org.csstudio.alarm.beast.ui.actions.RenameItemAction;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModel;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelListener;
+import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelSelectionListener;
 import org.csstudio.security.SecuritySupport;
 import org.csstudio.ui.util.dnd.ControlSystemDragSource;
 import org.csstudio.utility.singlesource.SingleSourcePlugin;
@@ -68,12 +69,13 @@ import org.eclipse.ui.IWorkbenchPartSite;
  *  @author Kay Kasemir
  *  @author Jaka Bobnar
  */
-public class GUI implements AlarmClientModelListener, ModelChangeListener
+public class GUI implements AlarmClientModelListener, AlarmClientModelSelectionListener
 {
     private static final Logger LOG = Logger.getLogger(Activator.ID);
 
     /** Model for this GUI */
     final private ModelProvider modelProvider;
+    final private Object modelLock;
 
     final private Display display;
 
@@ -104,6 +106,7 @@ public class GUI implements AlarmClientModelListener, ModelChangeListener
     {
         this.modelProvider = modelProvider;
         this.display = parent.getDisplay();
+        this.modelLock = new Object();
         createGUI(parent);
 
         throttle = new GUIUpdateThrottle() {
@@ -126,14 +129,18 @@ public class GUI implements AlarmClientModelListener, ModelChangeListener
         modelProvider.getModel().addListener(this);
         LOG.log(Level.FINE, () -> "Setting up Alarm Model Listener on "
                 + modelProvider.getModel().getConfigurationName());
-        modelProvider.addListener(this);
-        parent.addDisposeListener(e -> {throttle.dispose();
-                                if (modelProvider.getModel() != null) {
-                                    modelProvider.getModel().removeListener(this);
+        modelProvider.getModel().addAlarmModelSelectionListener(this);
+        parent.addDisposeListener(e ->
+                            {
+                                throttle.dispose();
+                                final AlarmClientModel mdl = modelProvider.getModel();
+                                if (mdl != null) {
+                                    mdl.removeListener(this);
                                     LOG.log(Level.FINE, () -> "Dispose: Removing Alarm Model Listener on "
-                                            + modelProvider.getModel().getConfigurationName());
+                                            + mdl.getConfigurationName());
+                                    mdl.removeAlarmModelSelectionListener(GUI.this);
                                 }
-                                modelProvider.removeListener(GUI.this);});
+                            });
 
         if (modelProvider.getModel().isServerAlive()) {
             setErrorMessage(null);
@@ -299,38 +306,40 @@ public class GUI implements AlarmClientModelListener, ModelChangeListener
         final boolean isRcp = UI.RCP.equals(SingleSourcePlugin.getUIHelper()
                 .getUI());
 
-        new ContextMenuHelper(null, manager, shell, items, modelProvider.getModel().isWriteAllowed());
-        manager.add(new Separator());
-        if(modelProvider.getModel().isWriteAllowed())
-        {
-            // Add edit items
-            if (items.size() <= 0)
+        synchronized (modelLock) {
+            new ContextMenuHelper(null, manager, shell, items, modelProvider.getModel().isWriteAllowed());
+            manager.add(new Separator());
+            if(modelProvider.getModel().isWriteAllowed())
             {
-                // Use the 'root' element as the parent
-                manager.add(new AddComponentAction(shell, modelProvider.getModel(), modelProvider.getModel().getConfigTree()));
-            }
-            else if (items.size() == 1)
-            {
-                final AlarmTreeItem item = items.get(0);
-                // Allow configuration of single item
+                // Add edit items
+                if (items.size() <= 0)
+                {
+                    // Use the 'root' element as the parent
+                    manager.add(new AddComponentAction(shell, modelProvider.getModel(), modelProvider.getModel().getConfigTree()));
+                }
+                else if (items.size() == 1)
+                {
+                    final AlarmTreeItem item = items.get(0);
+                    // Allow configuration of single item
 
-                manager.add(new ConfigureItemAction(shell, modelProvider.getModel(), item));
-                manager.add(new Separator());
-                // Allow addition of items to all but PVs (leafs of tree)
-                if (! (item instanceof AlarmTreePV))
-                    manager.add(new AddComponentAction(shell, modelProvider.getModel(), item));
-                manager.add(new RenameItemAction(shell, modelProvider.getModel(), item));
+                    manager.add(new ConfigureItemAction(shell, modelProvider.getModel(), item));
+                    manager.add(new Separator());
+                    // Allow addition of items to all but PVs (leafs of tree)
+                    if (! (item instanceof AlarmTreePV))
+                        manager.add(new AddComponentAction(shell, modelProvider.getModel(), item));
+                    manager.add(new RenameItemAction(shell, modelProvider.getModel(), item));
 
-                if (items.get(0).getPosition() == AlarmTreePosition.PV)
-                      manager.add(new DuplicatePVAction(shell, modelProvider.getModel(),
-                                                        (AlarmTreePV)items.get(0)));
-            }
-            if (items.size() >= 1)
-            {   // Allow certain actions on one or more selected items
-                manager.add(new EnableComponentAction(shell, modelProvider.getModel(), items));
-                manager.add(new DisableComponentAction(shell, modelProvider.getModel(), items));
-                manager.add(new MoveItemAction(shell, modelProvider.getModel(), items));
-                manager.add(new RemoveComponentAction(shell, modelProvider.getModel(), items));
+                    if (items.get(0).getPosition() == AlarmTreePosition.PV)
+                          manager.add(new DuplicatePVAction(shell, modelProvider.getModel(),
+                                                            (AlarmTreePV)items.get(0)));
+                }
+                if (items.size() >= 1)
+                {   // Allow certain actions on one or more selected items
+                    manager.add(new EnableComponentAction(shell, modelProvider.getModel(), items));
+                    manager.add(new DisableComponentAction(shell, modelProvider.getModel(), items));
+                    manager.add(new MoveItemAction(shell, modelProvider.getModel(), items));
+                    manager.add(new RemoveComponentAction(shell, modelProvider.getModel(), items));
+                }
             }
         }
         manager.add(new Separator());
@@ -411,12 +420,7 @@ public class GUI implements AlarmClientModelListener, ModelChangeListener
         display.asyncExec(() -> setErrorMessage(Messages.ServerTimeout));
     }
 
-    /** Model changed, redo the whole tree
-     *  @see AlarmClientModelListener
-     */
-    @Override
-    public void newAlarmConfiguration(final AlarmClientModel model)
-    {
+    private void refreshGUI(final AlarmClientModel model) {
         final AlarmTreeRoot config = model.getConfigTree();
         display.asyncExec(new Runnable()
         {
@@ -461,6 +465,18 @@ public class GUI implements AlarmClientModelListener, ModelChangeListener
         });
     }
 
+    /** Model changed, redo the whole tree
+     *  @see AlarmClientModelListener
+     */
+    @Override
+    public void newAlarmConfiguration(final AlarmClientModel model)
+    {
+        LOG.log(Level.FINE, () -> String.format("Configuration refresh: %s", model.getConfigurationName()));
+        synchronized (modelLock) {
+            if (model.equals(modelProvider.getModel())) refreshGUI(model);
+        }
+    }
+
     /** Alarm state changed, refresh the display
      *  @see AlarmClientModelListener
      */
@@ -474,34 +490,38 @@ public class GUI implements AlarmClientModelListener, ModelChangeListener
             //it is generally faster to refresh everything
             throttle.trigger();
         } else {
-            display.asyncExec(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    final Tree tree = tree_viewer.getTree();
-                    if (tree.isDisposed())
-                        return;
-                    if (model.isServerAlive())
-                        setErrorMessage(null);
-                    // Refresh affected items to indicate new state.
-                    // A complete tree_viewer.refresh() would 'work'
-                    // but be quite slow, so try to determine what
-                    // needs to be refreshed
-
-                    tree_viewer.update(pv, null);
-                    if (parent_changed)
-                    {    // Update parents up to root
-                        AlarmTreeItem item = pv.getParent();
-                        while (! (item instanceof AlarmTreeRoot))
+            synchronized (modelLock) {
+                if (model.equals(modelProvider.getModel())) {
+                    display.asyncExec(new Runnable()
+                    {
+                        @Override
+                        public void run()
                         {
-                            // Parent could become hidden with its PV
-                               tree_viewer.update(item,null);
-                            item = item.getParent();
+                            final Tree tree = tree_viewer.getTree();
+                            if (tree.isDisposed())
+                                return;
+                            if (model.isServerAlive())
+                                setErrorMessage(null);
+                            // Refresh affected items to indicate new state.
+                            // A complete tree_viewer.refresh() would 'work'
+                            // but be quite slow, so try to determine what
+                            // needs to be refreshed
+
+                            tree_viewer.update(pv, null);
+                            if (parent_changed)
+                            {    // Update parents up to root
+                                AlarmTreeItem item = pv.getParent();
+                                while (! (item instanceof AlarmTreeRoot))
+                                {
+                                    // Parent could become hidden with its PV
+                                       tree_viewer.update(item,null);
+                                    item = item.getParent();
+                                }
+                            }
                         }
-                    }
+                    });
                 }
-            });
+            }
         }
     }
 
@@ -534,13 +554,16 @@ public class GUI implements AlarmClientModelListener, ModelChangeListener
     }
 
     @Override
-    public void modelChange(AlarmClientModel oldModel, AlarmClientModel newModel) {
+    public void alarmModelSelection(String id, AlarmClientModel oldModel, AlarmClientModel newModel) {
+        if (oldModel == null) return;
         LOG.log(Level.FINE, () ->
-                String.format("Switchin Alarm Model listener from %s to %s.",
-                        oldModel.getConfigurationName(),
-                        newModel.getConfigurationName()));
-        oldModel.removeListener(this);
-        newModel.addListener(this);
-        tree_viewer.setInput(newModel.getConfigTree());
+            String.format("Switchin Alarm Model listener from %s to %s",
+                oldModel.getConfigurationName(),
+                newModel.getConfigurationName()));
+        synchronized (modelLock) {
+            oldModel.removeListener(this);
+            newModel.addListener(this);
+            refreshGUI(newModel);
+        }
     }
 }

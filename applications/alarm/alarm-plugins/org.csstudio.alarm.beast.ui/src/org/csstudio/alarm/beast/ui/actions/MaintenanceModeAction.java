@@ -7,12 +7,15 @@
  ******************************************************************************/
 package org.csstudio.alarm.beast.ui.actions;
 
+import java.util.logging.Level;
+
 import org.csstudio.alarm.beast.client.AlarmTreePV;
 import org.csstudio.alarm.beast.ui.Activator;
 import org.csstudio.alarm.beast.ui.AuthIDs;
 import org.csstudio.alarm.beast.ui.Messages;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModel;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelListener;
+import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelSelectionListener;
 import org.csstudio.security.ui.SecuritySupportUI;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -21,8 +24,9 @@ import org.eclipse.swt.widgets.Display;
 
 /** Action to control the "maintenance" mode
  *  @author Kay Kasemir
+ *  @author Miha Vitorovic
  */
-public class MaintenanceModeAction extends Action implements AlarmClientModelListener
+public class MaintenanceModeAction extends Action implements AlarmClientModelListener, AlarmClientModelSelectionListener
 {
     /** Images for button icon */
     private static ImageDescriptor image_on = null, image_off = null;
@@ -41,6 +45,7 @@ public class MaintenanceModeAction extends Action implements AlarmClientModelLis
         //authorization
         SecuritySupportUI.registerAction(this, AuthIDs.CONFIGURE);
 
+        model.addAlarmModelSelectionListener(this);
         setModel(model);
     }
 
@@ -108,4 +113,18 @@ public class MaintenanceModeAction extends Action implements AlarmClientModelLis
     @Override
     public void newAlarmState(AlarmClientModel model, AlarmTreePV pv, boolean parent_changed)
     { /* Ignore */ }
+
+    @Override
+    public void alarmModelSelection(String id, AlarmClientModel oldModel, AlarmClientModel newModel) {
+        synchronized (this) {
+            Activator.getLogger().log(Level.FINE,
+                    () -> String.format("Model selection change: new=%s, active=%s",
+                            newModel.getConfigurationName(),
+                            model.getConfigurationName()));
+            // if new model was obtained by someone or this is changed into the already configured model
+            // .. then ignore this message
+            if ((id == null && oldModel == null) || newModel == model) return;
+            setModel(newModel);
+        }
+    }
 }
