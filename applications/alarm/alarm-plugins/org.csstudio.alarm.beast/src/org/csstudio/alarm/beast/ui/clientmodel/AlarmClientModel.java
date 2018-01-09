@@ -72,6 +72,8 @@ public class AlarmClientModel
     // shared instances
     private static final Set<AlarmClientModel> INSTANCES = Collections.newSetFromMap(new WeakHashMap<>());
 
+    private static final Set<AlarmClientModelSelectionListener> SELECTION_LISTENERS = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
+
     /** Reference count for instance */
     private AtomicInteger references = new AtomicInteger();
 
@@ -143,7 +145,7 @@ public class AlarmClientModel
     private AlarmClientModel(final String config_name, boolean allow_config_changes, AlarmClientModelConfigListener listener) throws Exception
     {
         this.config_name = config_name;
-        this.allow_config_changes = false;  // XXX prevent config changes, all models are loaded anyhow.
+        this.allow_config_changes = false;
         // Initial dummy alarm info
         createPseudoAlarmTree(Messages.AlarmClientModel_NotInitialized);
 
@@ -190,6 +192,7 @@ public class AlarmClientModel
             }
         }
         instance.references.incrementAndGet();
+        instance.notifyAlarmClientModelSelection(null, null);
         return instance;
     }
 
@@ -226,9 +229,9 @@ public class AlarmClientModel
             }
         }
         default_instance.references.incrementAndGet();
+        default_instance.notifyAlarmClientModelSelection(null, null);
         return default_instance;
     }
-
 
     /** Must be called to release model when no longer used.
      *  <p>
@@ -287,6 +290,26 @@ public class AlarmClientModel
     {
         internalRelease();
         super.finalize();
+    }
+
+    /**
+     * Notifies all listeners, that the {@link AlarmClientModel} was changed to <code>this</code> model.
+     * @param id - the ID of the widget triggering the change. Can be <code>null</code>
+     * @param oldModel - the previous {@link AlarmClientModel}. Can be <code>null</code>.
+     */
+    public void notifyAlarmClientModelSelection(String id, AlarmClientModel oldModel) {
+        synchronized (SELECTION_LISTENERS) {
+            for (final AlarmClientModelSelectionListener listener : SELECTION_LISTENERS)
+                listener.alarmModelSelection(id, oldModel, this);
+        }
+    }
+
+    public void addAlarmModelSelectionListener(AlarmClientModelSelectionListener listener) {
+        if (listener != null) SELECTION_LISTENERS.add(listener);
+    }
+
+    public void removeAlarmModelSelectionListener(AlarmClientModelSelectionListener listener) {
+        SELECTION_LISTENERS.remove(listener);
     }
 
     /** List all configuration 'root' element names, i.e. names

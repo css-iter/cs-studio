@@ -22,8 +22,7 @@ import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModel;
  * the already obtained one.
  * </p><p>
  * This interface provides capability to support the single source of the model
- * (the Model provider), and also to register a listener to get notified that the
- * model has been replaced by another one.
+ * (the Model provider).
  * </p>
  *
  * @author <a href="mailto:miha.vitorovic@cosylab.com">Miha Vitorovic</a>
@@ -36,14 +35,4 @@ public interface ModelProvider {
      * @param model sets a new {@link AlarmClientModel}, since a user requested the change
      */
     public void setModel(AlarmClientModel model);
-
-    /**
-     * @param listener add a new {@link ModelChangeListener}
-     */
-    public void addListener(ModelChangeListener listener);
-
-    /**
-     * @param listener remove the {@link ModelChangeListener}
-     */
-    public void removeListener(ModelChangeListener listener);
 }

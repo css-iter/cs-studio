@@ -7,8 +7,6 @@
  ******************************************************************************/
 package org.csstudio.alarm.beast.ui.alarmtree;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,11 +39,7 @@ public class AlarmTreeView extends ViewPart implements ModelProvider
 
     private AlarmClientModel model;
 
-    private List<ModelChangeListener> listeners = new ArrayList<>();
-
     private GUI gui;
-    private MaintenanceModeAction maintenanceModeAction;
-    private ConfigureItemAction configureItemAction;
 
     /** {@inheritDoc} */
     @Override
@@ -88,13 +82,12 @@ public class AlarmTreeView extends ViewPart implements ModelProvider
         final IToolBarManager toolbar = getViewSite().getActionBars().getToolBarManager();
         if (Preferences.isConfigSelectionAllowed())
         {
-            toolbar.add(new SelectConfigurationAction(parent, this));
+            toolbar.add(new SelectConfigurationAction(this));
             toolbar.add(new Separator());
         }
         if (model.isWriteAllowed())
         {
-            maintenanceModeAction = new MaintenanceModeAction(model);
-            toolbar.add(maintenanceModeAction);
+            toolbar.add(new MaintenanceModeAction(model));
             toolbar.add(new Separator());
         }
 
@@ -109,8 +102,7 @@ public class AlarmTreeView extends ViewPart implements ModelProvider
             // On Linux/GTK, however, buttons vanish at the right edge of the view.
             // Tried SWT.Resize listener with toolbar.update(true), no improvement.
             toolbar.add(new DebugAction(shell, this));
-            configureItemAction = new ConfigureItemAction(shell, model, gui.getTreeViewer());
-            toolbar.add(configureItemAction);
+            toolbar.add(new ConfigureItemAction(shell, model, gui.getTreeViewer()));
             toolbar.add(new AcknowledgeAction(true, gui.getTreeViewer()));
             toolbar.add(new AcknowledgeAction(false, gui.getTreeViewer()));
             toolbar.add(new Separator());
@@ -143,27 +135,8 @@ public class AlarmTreeView extends ViewPart implements ModelProvider
 
     @Override
     public synchronized void setModel(AlarmClientModel model) {
-        synchronized (listeners) {
-            for (final ModelChangeListener listener: listeners) {
-                listener.modelChange(this.model, model);
-            }
-        }
+        AlarmClientModel oldModel = this.model;
         this.model = model;
-        if (maintenanceModeAction != null) maintenanceModeAction.setModel(model);
-        if (configureItemAction != null) configureItemAction.setModel(model);
-    }
-
-    @Override
-    public void addListener(ModelChangeListener listener) {
-        synchronized (listeners) {
-            listeners.add(listener);
-        }
-    }
-
-    @Override
-    public void removeListener(ModelChangeListener listener) {
-        synchronized (listeners) {
-            listeners.remove(listener);
-        }
+        this.model.notifyAlarmClientModelSelection(ID, oldModel);
     }
 }
