@@ -28,15 +28,18 @@ import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelListener;
 import org.diirt.datasource.ChannelHandler;
 import org.diirt.datasource.DataSource;
 import org.diirt.datasource.vtype.DataTypeSupport;
+import org.eclipse.core.runtime.Platform;
 
 /**
  * @author Kunal Shroff
  *
  */
 public class BeastDataSource extends DataSource implements AlarmClientModelConfigListener {
-
     private static final Logger log = Logger.getLogger(BeastDataSource.class.getName());
 
+    private static final String PREF_QUALIFIER = "org.csstudio.alarm.diirt.datasource";
+    private static final String PREF_KEY_COMPOSITE = "composite.model.name";
+    private static final String PREF_DEFAULT_COMPOSITE_MODEL_NAME = "Composite";
 
     // The model, activeAlarms and acknowledgedAlarms is shared by the entire
     // datasource, the benefit of does this at the datasource level instead of
@@ -166,7 +169,10 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
         this.configuration = configuration;
         loaded = new AtomicInteger(0);
         toLoad = new AtomicInteger(-1);
-        compositeModel = new CompositeAlarmClientModel("Composite");        // XXX temporary name
+        final String compositeModelName = Platform.getPreferencesService().
+                getString(PREF_QUALIFIER, PREF_KEY_COMPOSITE, PREF_DEFAULT_COMPOSITE_MODEL_NAME, null);
+        log.log(Level.CONFIG, () -> String.format("Using '%s' as the composite alarm model name.", compositeModelName));
+        compositeModel = new CompositeAlarmClientModel(compositeModelName);
         // one global listener for all models
         modelListener = new BeastAlarmClientModelListener(this);
         try {
