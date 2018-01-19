@@ -82,6 +82,8 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
             parent.compositeModel.addAlarmClientModel(model);
             if (parent.loaded.get() == parent.toLoad.get()) {
                 parent.compositeModel.setAllLoaded(true);
+                log.log(Level.FINE, "All models loaded - notifying Composite model listeners.");
+                parent.compositeModel.compositeModelsLoaded();
             }
             synchronized (parent.channelConsumers) {
                 for (String channelName : parent.channelConsumers.keySet()) {
@@ -173,6 +175,7 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
                 getString(PREF_QUALIFIER, PREF_KEY_COMPOSITE, PREF_DEFAULT_COMPOSITE_MODEL_NAME, null);
         log.log(Level.CONFIG, () -> String.format("Using '%s' as the composite alarm model name.", compositeModelName));
         compositeModel = new CompositeAlarmClientModel(compositeModelName);
+        compositeModel.registerWithClientModels();
         // one global listener for all models
         modelListener = new BeastAlarmClientModelListener(this);
         try {

@@ -137,6 +137,16 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
         return false;
     }
 
+    /** The method registers the {@link CompositeAlarmClientModel} model with the {@link AlarmClientModel}s. */
+    public void registerWithClientModels() {
+        addComposite(this);
+    }
+
+    /** Notifies all listeners, that the {@link CompositeAlarmClientModel} has finished adding all related {@link AlarmClientModel}s. */
+    public void compositeModelsLoaded() {
+        fireNewConfig();
+    }
+
     @Override
     public void requestMaintenanceMode(boolean maintenance) {
         throw new UnsupportedOperationException("Maintenance mode not supported on Composite Alarm Client Model.");

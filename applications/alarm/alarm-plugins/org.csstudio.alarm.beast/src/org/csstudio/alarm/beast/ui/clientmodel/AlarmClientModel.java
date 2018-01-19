@@ -69,6 +69,7 @@ public class AlarmClientModel
 {
     private static final Logger LOG = Activator.getLogger();
     private static AlarmClientModel default_instance;
+    private static AlarmClientModel composite_instance = null;
     // shared instances
     private static final Set<AlarmClientModel> INSTANCES = Collections.newSetFromMap(new WeakHashMap<>());
 
@@ -187,6 +188,10 @@ public class AlarmClientModel
                 }
             }
             if (instance == null) {
+                if ((composite_instance != null) && config_name.equals(composite_instance.getConfigurationName())) {
+                    LOG.log(Level.FINEST, () -> "Returning composite model: " + config_name);
+                    return composite_instance;
+                }
                 instance = new AlarmClientModel(config_name, false, listener);
                 INSTANCES.add(instance);
             }
@@ -250,11 +255,18 @@ public class AlarmClientModel
         }
     }
 
+    protected void addComposite(AlarmClientModel composite) {
+        synchronized(INSTANCES) {
+            if (composite_instance == null)
+                composite_instance = composite;
+        }
+    }
+
     private void internalRelease()
     {
         try
         {
-            Activator.getLogger().fine("AlarmClientModel closed.");
+            LOG.fine("AlarmClientModel closed.");
             synchronized(INSTANCES)
             {
                 INSTANCES.remove(this);
@@ -281,7 +293,7 @@ public class AlarmClientModel
         }
         catch (Exception ex)
         {
-            Activator.getLogger().log(Level.WARNING, "Model release failed", ex);
+            LOG.log(Level.WARNING, "Model release failed", ex);
         }
     }
 
@@ -417,7 +429,7 @@ public class AlarmClientModel
                 }
                 catch (Exception ex)
                 {
-                    Activator.getLogger().log(Level.SEVERE, "Cannot start AlarmClientCommunicator", ex);
+                    LOG.log(Level.SEVERE, "Cannot start AlarmClientCommunicator", ex);
                     return;
                 }
             }
@@ -480,7 +492,7 @@ public class AlarmClientModel
         }
         catch (Exception ex)
         {
-            Activator.getLogger().log(Level.SEVERE, "Cannot connect to RDB", ex);
+            LOG.log(Level.SEVERE, "Cannot connect to RDB", ex);
             createPseudoAlarmTree("Alarm RDB Error: " + ex.getMessage());
 
             synchronized (this)
@@ -541,12 +553,12 @@ public class AlarmClientModel
         }
         catch (Exception ex)
         {
-            Activator.getLogger().log(Level.SEVERE, "Cannot read alarm configuration", ex);
+            LOG.log(Level.SEVERE, "Cannot read alarm configuration", ex);
             createPseudoAlarmTree("Alarm RDB Error: " + ex.getMessage());
         }
         // Info about performance
         timer.stop();
-        if (Activator.getLogger().isLoggable(Level.INFO))
+        if (LOG.isLoggable(Level.INFO))
         {
             final int count;
             final int pv_count;
@@ -555,7 +567,7 @@ public class AlarmClientModel
                 count = config_tree.getElementCount();
                 pv_count = config_tree.getLeafCount();
             }
-            Activator.getLogger().info(String.format(
+            LOG.info(String.format(
                 "Read %d alarm tree items, %d PVs in %.2f seconds: %.1f items/sec, %.1f PVs/sec",
                 count, pv_count, timer.getSeconds(),
                 count / timer.getSeconds(),
@@ -1021,7 +1033,7 @@ public class AlarmClientModel
             pv = findPV(name);
             if (pv == null)
             {
-                Activator.getLogger().log(Level.WARNING,
+                LOG.log(Level.WARNING,
                     "Received enablement ({0}) for unknown PV {1}",
                     new Object[] { Boolean.toString(enabled), name });
                 return;
@@ -1062,7 +1074,7 @@ public class AlarmClientModel
         // Is there a memory leak in the logger?
         // The update comes from JMS, and the logger may also
         // send info to JMS. Is that a problem?
-        Activator.getLogger().log(Level.WARNING,
+        LOG.log(Level.WARNING,
             "Received update for unknown PV {0}", name);
     }
 
@@ -1124,7 +1136,7 @@ public class AlarmClientModel
             }
             catch (Throwable ex)
             {
-                Activator.getLogger().log(Level.WARNING,
+                LOG.log(Level.WARNING,
                         "Server timeout notification error", ex);
             }
         }
@@ -1141,7 +1153,7 @@ public class AlarmClientModel
             }
             catch (Throwable ex)
             {
-                Activator.getLogger().log(Level.WARNING,
+                LOG.log(Level.WARNING,
                     "Model update notification error", ex);
             }
         }
@@ -1150,7 +1162,7 @@ public class AlarmClientModel
     /** Inform listeners about overall change to alarm tree configuration:
      *  Items added, removed.
      */
-    void fireNewConfig()
+    protected void fireNewConfig()
     {
         for (AlarmClientModelListener listener : listeners)
         {
@@ -1160,7 +1172,7 @@ public class AlarmClientModel
             }
             catch (Throwable ex)
             {
-                Activator.getLogger().log(Level.WARNING,
+                LOG.log(Level.WARNING,
                     "Model config notification error", ex);
             }
         }
@@ -1211,7 +1223,7 @@ public class AlarmClientModel
             }
             catch (Throwable ex)
             {
-                Activator.getLogger().log(Level.WARNING,
+                LOG.log(Level.WARNING,
                     "Alarm update notification error", ex);
             }
         }
