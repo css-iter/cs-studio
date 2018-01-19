@@ -45,13 +45,14 @@ public class MessageHistoryWidgetFigure extends AbstractSWTWidgetFigure<Composit
 
     }
 
+
     /**
      * @return the message history GUI
      */
     public GUI getGUI() {
         return gui;
     }
-    
+
     @Override
     protected void dispose() {
         if(gui != null)
