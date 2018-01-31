@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
@@ -177,6 +178,7 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
     synchronized public AlarmTreePV[] getAcknowledgedAlarms() {
         final List<AlarmTreePV> retval = new ArrayList<>();
         synchronized (models) {
+            LOG.log(Level.FINE, () -> String.format("Adding alarms on all models: %d", models.size()));
             models.stream().forEach(model -> retval.addAll(Arrays.asList(model.getAcknowledgedAlarms())));
         }
         return retval.toArray(new AlarmTreePV[retval.size()]);
@@ -215,7 +217,7 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
     @Override
     public void enable(final AlarmTreePV pv, final boolean enabled) throws Exception {
         // Ignored silently since composite tree is not writable
-        LOG.log(Level.FINE, "PV enable not supported on Composite Alarm Client Model.");
+        LOG.log(Level.FINE, () -> "PV enable not supported on Composite Alarm Client Model. pv: " + pv.getPathName() + ", enabled: " + enabled);
     }
 
     @Override
@@ -251,7 +253,13 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
 
     @Override
     public synchronized AlarmTreePV findPV(final String name) {
-        // TODO find in children... or always return null?
+        synchronized (models) {
+            for (AlarmClientModel model : models) {
+                final AlarmTreePV pv = model.findPV(name);
+                if (pv != null) return pv;
+            }
+        }
+        // not found
         return null;
     }
 
@@ -364,5 +372,18 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
                 Activator.getLogger().log(Level.WARNING, "Alarm update notification error", ex);
             }
         }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || !(obj instanceof CompositeAlarmClientModel)) return false;
+        final CompositeAlarmClientModel other = (CompositeAlarmClientModel) obj;
+        return Objects.equals(getConfigurationName(), other.getConfigurationName());
+    }
+
+    @Override
+    public int hashCode() {
+        final String name = getConfigurationName();
+        return name == null ? 1 : 33 + name.hashCode();
     }
 }
