@@ -366,18 +366,19 @@ public class PVManagerPV implements IPV {
     /**
      * Logs pv write attempt if pv name doesn't start with any of the LOG_EXCLUDE_PV_PREFIXES.
      */
-    private void logWriteAttempt(Object value) {
-        if (LOG_LEVEL == Level.OFF)
-            return;
 
+    private void logWriteAttempt(Object value) {
         boolean preventLog = Arrays.stream(LOG_EXCLUDE_PV_PREFIXES).anyMatch(e -> name.startsWith(e.trim()));
 
-        if (preventLog)
-            return;
-
-        LOGGER.log(LOG_LEVEL, LOG_WRITE_MESSAGE_FORMAT,
-                new Object[] { name, value.toString(), pvReader.getValue().toString() });
+        if (!preventLog) {
+            Object oldValue = null;
+            if (pvReader != null)
+                oldValue = pvReader.getValue();
+            LOGGER.log(LOG_LEVEL, LOG_WRITE_MESSAGE_FORMAT,
+                    new Object[] { name, String.valueOf(oldValue), String.valueOf(value) });
+        }
     }
+
 
     @Override
     public void start() throws Exception {
