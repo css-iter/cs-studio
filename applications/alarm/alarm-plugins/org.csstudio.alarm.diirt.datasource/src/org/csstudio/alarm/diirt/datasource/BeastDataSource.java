@@ -79,7 +79,7 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
             log.config("beast  datasource: new alarm configuration --- " + model);
             // new model loaded
             parent.loaded.incrementAndGet();
-            parent.compositeModel.addAlarmClientModel(model);
+            if (!parent.compositeModel.equals(model)) parent.compositeModel.addAlarmClientModel(model);
             if (parent.loaded.get() == parent.toLoad.get()) {
                 parent.compositeModel.setAllLoaded(true);
                 log.log(Level.FINE, "All models loaded - notifying Composite model listeners.");

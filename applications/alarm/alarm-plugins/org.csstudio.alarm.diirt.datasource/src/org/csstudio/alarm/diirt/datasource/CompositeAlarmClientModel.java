@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -31,8 +32,11 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
     private final Set<String> disconnectedModels;
     // register this listener to all the children so that we can use the notifications for the root
     private final AlarmClientModelListener childrenListener;
-    /** Listeners who registered for notifications */
-    final private List<AlarmClientModelListener> listeners =  new CopyOnWriteArrayList<>();
+
+    private AtomicBoolean configLoopPrevention;
+    private AtomicBoolean timeoutLoopPrevention;
+    private AtomicBoolean modeLoopPrevention;
+    private AtomicBoolean alarmLoopPrevention;
 
     private static class ChildrenModelListener implements AlarmClientModelListener {
         private final CompositeAlarmClientModel parent;
@@ -76,6 +80,10 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
         allLoaded = false;
         childrenListener = new ChildrenModelListener(this);
         disconnectedModels = Collections.synchronizedSet(new HashSet<>());
+        configLoopPrevention = new AtomicBoolean();
+        timeoutLoopPrevention = new AtomicBoolean();
+        modeLoopPrevention = new AtomicBoolean();
+        alarmLoopPrevention = new AtomicBoolean();
     }
 
     @Override
@@ -88,6 +96,8 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
      * @param child
      */
     public synchronized void addAlarmClientModel(AlarmClientModel child) {
+        // prevent adding null or the model to itself
+        if ((child == null) || (child == this)) return;
         models.add(child);
         child.addListener(childrenListener);
         compositeRoot.addAlarmTreeRoot(child.getConfigTree());
@@ -254,7 +264,7 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
     @Override
     public synchronized AlarmTreePV findPV(final String name) {
         synchronized (models) {
-            for (AlarmClientModel model : models) {
+            for (final AlarmClientModel model : models) {
                 final AlarmTreePV pv = model.findPV(name);
                 if (pv != null) return pv;
             }
@@ -286,18 +296,6 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
         LOG.log(Level.FINE, "Dump not supported on Composite Alarm Client Model.");
     }
 
-    @Override
-    public void addListener(final AlarmClientModelListener listener) {
-        listeners.add(listener);
-        LOG.log(Level.FINER, () -> "Listener added. n=" + listeners.size());
-    }
-
-    @Override
-    public void removeListener(final AlarmClientModelListener listener) {
-        listeners.remove(listener);
-        LOG.log(Level.FINER, () -> "Listener removed. n=" + listeners.size());
-    }
-
     public boolean isAllLoaded() {
         return allLoaded;
     }
@@ -308,11 +306,13 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
 
     // Inform listeners about server timeout
     private void compositeServerTimeout(String configName) {
+        if (!timeoutLoopPrevention.compareAndSet(false, true))
+            return; // already in the loop
         // The root is disconnected only if all children are disconnected
         disconnectedModels.add(configName);
         if (disconnectedModels.size() >= models.size()) {
             LOG.log(Level.WARNING, "All Alarm Client Models are diconnected from the JMS server.");
-            for (AlarmClientModelListener listener : listeners) {
+            for (final AlarmClientModelListener listener : listeners) {
                 try {
                     listener.serverTimeout(this);
                 } catch (Throwable ex) {
@@ -320,13 +320,16 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
                 }
             }
         }
+        timeoutLoopPrevention.set(false);
     }
 
     // Inform listeners that server is OK and in which mode
     private void compositeModeUpdate(String configName) {
+        if (!modeLoopPrevention.compareAndSet(false, true))
+            return; // already in the loop
         disconnectedModels.remove(configName);
         // composite can never go into maintenance mode
-        for (AlarmClientModelListener listener : listeners) {
+        for (final AlarmClientModelListener listener : listeners) {
             try {
                 // never in maintenance mode
                 listener.serverModeUpdate(this, false);
@@ -334,18 +337,22 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
                 Activator.getLogger().log(Level.WARNING, "Model update notification error", ex);
             }
         }
+        modeLoopPrevention.set(false);
     }
 
     // Inform listeners about overall change to alarm tree configuration:
     //   Items added, removed.
     private void compositeNewConfig() {
-        for (AlarmClientModelListener listener : listeners) {
+        if (!configLoopPrevention.compareAndSet(false, true))
+            return; // already in the loop
+        for (final AlarmClientModelListener listener : listeners) {
             try {
                 listener.newAlarmConfiguration(this);
             } catch (Throwable ex) {
                 Activator.getLogger().log(Level.WARNING, "Model config notification error", ex);
             }
         }
+        configLoopPrevention.set(false);
     }
 
     /*  Inform listeners about change in alarm state.
@@ -358,7 +365,9 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
      *  parent_changed    'true' if a parent item was updated as well
      */
     private void compositeNewAlarmState(final AlarmTreePV pv, final boolean parent_changed) {
-        for (AlarmClientModelListener listener : listeners) {
+        if (!alarmLoopPrevention.compareAndSet(false, true))
+            return; // already in the loop
+        for (final AlarmClientModelListener listener : listeners) {
             try {
                 final boolean changed = compositeRoot.maximizeSeverity();
                 if (changed) {
@@ -372,6 +381,7 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
                 Activator.getLogger().log(Level.WARNING, "Alarm update notification error", ex);
             }
         }
+        alarmLoopPrevention.set(false);
     }
 
     @Override

@@ -124,7 +124,7 @@ public class AlarmClientModel
     private Set<AlarmTreePV> acknowledged_alarms = new HashSet<>();
 
     /** Listeners who registered for notifications */
-    final private CopyOnWriteArrayList<AlarmClientModelListener> listeners =
+    final protected CopyOnWriteArrayList<AlarmClientModelListener> listeners =
         new CopyOnWriteArrayList<>();
 
     /** Send events? */
