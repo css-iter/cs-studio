@@ -32,8 +32,6 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
     private final Set<String> disconnectedModels;
     // register this listener to all the children so that we can use the notifications for the root
     private final AlarmClientModelListener childrenListener;
-    /** Listeners who registered for notifications */
-    final private List<AlarmClientModelListener> listeners =  new CopyOnWriteArrayList<>();
 
     private AtomicBoolean configLoopPrevention;
     private AtomicBoolean timeoutLoopPrevention;
@@ -98,6 +96,8 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
      * @param child
      */
     public synchronized void addAlarmClientModel(AlarmClientModel child) {
+        // prevent adding null or the model to itself
+        if ((child == null) || (child == this)) return;
         models.add(child);
         child.addListener(childrenListener);
         compositeRoot.addAlarmTreeRoot(child.getConfigTree());
@@ -264,7 +264,7 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
     @Override
     public synchronized AlarmTreePV findPV(final String name) {
         synchronized (models) {
-            for (AlarmClientModel model : models) {
+            for (final AlarmClientModel model : models) {
                 final AlarmTreePV pv = model.findPV(name);
                 if (pv != null) return pv;
             }
@@ -296,18 +296,6 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
         LOG.log(Level.FINE, "Dump not supported on Composite Alarm Client Model.");
     }
 
-    @Override
-    public void addListener(final AlarmClientModelListener listener) {
-        listeners.add(listener);
-        LOG.log(Level.FINER, () -> "Listener added. n=" + listeners.size());
-    }
-
-    @Override
-    public void removeListener(final AlarmClientModelListener listener) {
-        listeners.remove(listener);
-        LOG.log(Level.FINER, () -> "Listener removed. n=" + listeners.size());
-    }
-
     public boolean isAllLoaded() {
         return allLoaded;
     }
@@ -324,7 +312,7 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
         disconnectedModels.add(configName);
         if (disconnectedModels.size() >= models.size()) {
             LOG.log(Level.WARNING, "All Alarm Client Models are diconnected from the JMS server.");
-            for (AlarmClientModelListener listener : listeners) {
+            for (final AlarmClientModelListener listener : listeners) {
                 try {
                     listener.serverTimeout(this);
                 } catch (Throwable ex) {
@@ -341,7 +329,7 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
             return; // already in the loop
         disconnectedModels.remove(configName);
         // composite can never go into maintenance mode
-        for (AlarmClientModelListener listener : listeners) {
+        for (final AlarmClientModelListener listener : listeners) {
             try {
                 // never in maintenance mode
                 listener.serverModeUpdate(this, false);
@@ -357,7 +345,7 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
     private void compositeNewConfig() {
         if (!configLoopPrevention.compareAndSet(false, true))
             return; // already in the loop
-        for (AlarmClientModelListener listener : listeners) {
+        for (final AlarmClientModelListener listener : listeners) {
             try {
                 listener.newAlarmConfiguration(this);
             } catch (Throwable ex) {
@@ -379,7 +367,7 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
     private void compositeNewAlarmState(final AlarmTreePV pv, final boolean parent_changed) {
         if (!alarmLoopPrevention.compareAndSet(false, true))
             return; // already in the loop
-        for (AlarmClientModelListener listener : listeners) {
+        for (final AlarmClientModelListener listener : listeners) {
             try {
                 final boolean changed = compositeRoot.maximizeSeverity();
                 if (changed) {
