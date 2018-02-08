@@ -374,7 +374,8 @@ public class PVManagerPV implements IPV {
             Object oldValue = null;
             if (pvReader != null)
                 oldValue = pvReader.getValue();
-            LOGGER.log(LOG_LEVEL, LOG_WRITE_MESSAGE_FORMAT,
+            LOGGER.logp(LOG_LEVEL, Activator.PLUGIN_ID, name,
+                    LOG_WRITE_MESSAGE_FORMAT,
                     new Object[] { name, String.valueOf(oldValue), String.valueOf(value) });
         }
     }
