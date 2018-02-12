@@ -7,14 +7,11 @@
  ******************************************************************************/
 package org.csstudio.alarm.beast.ui.actions;
 
-import java.util.logging.Level;
-
 import org.csstudio.alarm.beast.client.AlarmTreeItem;
 import org.csstudio.alarm.beast.ui.Activator;
 import org.csstudio.alarm.beast.ui.AuthIDs;
 import org.csstudio.alarm.beast.ui.Messages;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModel;
-import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelSelectionListener;
 import org.csstudio.security.SecuritySupport;
 import org.csstudio.security.ui.SecuritySupportUI;
 import org.eclipse.jface.action.Action;
@@ -28,22 +25,12 @@ import org.eclipse.swt.widgets.Shell;
  *  @author Kay Kasemir
  *  @author Xihui Chen
  */
-public class ConfigureItemAction extends Action implements AlarmClientModelSelectionListener
+public class ConfigureItemAction extends Action
 {
     private ISelectionProvider selection_provider;
     private Shell shell;
     private AlarmClientModel model;
     private AlarmTreeItem item;
-
-    private ConfigureItemAction(final Shell shell, final AlarmClientModel model) {
-        super(Messages.ConfigureItem,
-                Activator.getImageDescriptor("icons/configure.gif")); //$NON-NLS-1$
-          this.shell = shell;
-          this.model = model;
-          this.model.addAlarmModelSelectionListener(this);
-          //authorization
-          SecuritySupportUI.registerAction(this, AuthIDs.CONFIGURE);
-    }
 
     /** Initialize
      *  @param shell Shell
@@ -51,9 +38,16 @@ public class ConfigureItemAction extends Action implements AlarmClientModelSelec
      *  @param item PV to configure
      */
     public ConfigureItemAction(final Shell shell, final AlarmClientModel model,
-            final AlarmTreeItem item) {
-        this(shell, model);
+            final AlarmTreeItem item)
+    {
+        super(Messages.ConfigureItem,
+              Activator.getImageDescriptor("icons/configure.gif")); //$NON-NLS-1$
+        this.shell = shell;
+        this.model = model;
         this.item = item;
+
+        //authorization
+        SecuritySupportUI.registerAction(this, AuthIDs.CONFIGURE);
     }
 
     /** Initialize action
@@ -61,7 +55,10 @@ public class ConfigureItemAction extends Action implements AlarmClientModelSelec
      */
     public ConfigureItemAction(final Shell shell, final AlarmClientModel model, final ISelectionProvider selection_provider)
     {
-        this(shell, model);
+        super(Messages.ConfigureItem,
+              Activator.getImageDescriptor("icons/configure.gif")); //$NON-NLS-1$
+        this.shell = shell;
+        this.model = model;
         this.selection_provider = selection_provider;
         // Enable only when single item is selected
         selection_provider.addSelectionChangedListener(new ISelectionChangedListener()
@@ -77,24 +74,18 @@ public class ConfigureItemAction extends Action implements AlarmClientModelSelec
                     setEnabled(false);
             }
         });
+        SecuritySupportUI.registerAction(this, AuthIDs.CONFIGURE);
     }
 
-    public void setModel(AlarmClientModel model) {
-        synchronized (this) {
-            this.model = model;
-        }
-    }
 
     @Override
     public void run()
     {
-        synchronized (this) {
-            if (selection_provider != null)
-                item =
-                    (AlarmTreeItem) ((IStructuredSelection)selection_provider.getSelection()).getFirstElement();
-            // else: Fixed item passed into constructor
-            performItemConfiguration(shell, model, item);
-        }
+        if (selection_provider != null)
+            item =
+                (AlarmTreeItem) ((IStructuredSelection)selection_provider.getSelection()).getFirstElement();
+        // else: Fixed item passed into constructor
+        performItemConfiguration(shell, model, item);
     }
 
     /** Interactively configure an item
@@ -110,15 +101,5 @@ public class ConfigureItemAction extends Action implements AlarmClientModelSelec
     {
         final ItemConfigDialog dlg = new ItemConfigDialog(shell, item, model, false);
         dlg.open();
-    }
-
-    @Override
-    public void alarmModelSelection(String id, AlarmClientModel oldModel, AlarmClientModel newModel) {
-        Activator.getLogger().log(Level.FINE,
-                () -> String.format("Model selection change: new=%s, active=%s",
-                        newModel.getConfigurationName(),
-                        model.getConfigurationName()));
-        if ((id == null && oldModel == null) || model == newModel) return;
-        setModel(newModel);
     }
 }

@@ -32,14 +32,14 @@ import org.eclipse.ui.part.ViewPart;
 /** Eclipse view that displays the alarm tree.
  *  @author Kay Kasemir
  */
-public class AlarmTreeView extends ViewPart implements ModelProvider
+public class AlarmTreeView extends ViewPart
 {
     /** ID of the view a defined in plugin.xml */
     final public static String ID = "org.csstudio.alarm.beast.ui.alarmtree.View"; //$NON-NLS-1$
 
     private AlarmClientModel model;
 
-    private GUI gui;
+    private GUI gui = null;
 
     /** {@inheritDoc} */
     @Override
@@ -77,12 +77,12 @@ public class AlarmTreeView extends ViewPart implements ModelProvider
         });
 
         // Have model, create GUI
-        gui = new GUI(parent, this, getViewSite());
+        gui = new GUI(parent, model, getViewSite());
 
         final IToolBarManager toolbar = getViewSite().getActionBars().getToolBarManager();
         if (Preferences.isConfigSelectionAllowed())
         {
-            toolbar.add(new SelectConfigurationAction(this));
+            toolbar.add(new SelectConfigurationAction(parent, model));
             toolbar.add(new Separator());
         }
         if (model.isWriteAllowed())
@@ -92,7 +92,7 @@ public class AlarmTreeView extends ViewPart implements ModelProvider
         }
 
         final Shell shell = parent.getShell();
-        toolbar.add(new InfoAction(shell, this));
+        toolbar.add(new InfoAction(shell, model));
 
         if (model.isWriteAllowed())
         {
@@ -101,7 +101,7 @@ public class AlarmTreeView extends ViewPart implements ModelProvider
             // line when the view is too small.
             // On Linux/GTK, however, buttons vanish at the right edge of the view.
             // Tried SWT.Resize listener with toolbar.update(true), no improvement.
-            toolbar.add(new DebugAction(shell, this));
+            toolbar.add(new DebugAction(shell, model));
             toolbar.add(new ConfigureItemAction(shell, model, gui.getTreeViewer()));
             toolbar.add(new AcknowledgeAction(true, gui.getTreeViewer()));
             toolbar.add(new AcknowledgeAction(false, gui.getTreeViewer()));
@@ -114,7 +114,13 @@ public class AlarmTreeView extends ViewPart implements ModelProvider
         getSite().setSelectionProvider(gui.getTreeViewer());
     }
 
+
+
+
+    /** {@inheritDoc} */
+
     @Override
+
     public void setFocus()
     {
         if (gui != null)
@@ -126,17 +132,5 @@ public class AlarmTreeView extends ViewPart implements ModelProvider
     {
         if (gui != null)
             gui.getTreeViewer().setSelection(new StructuredSelection(item));
-    }
-
-    @Override
-    public synchronized AlarmClientModel getModel() {
-        return model;
-    }
-
-    @Override
-    public synchronized void setModel(AlarmClientModel model) {
-        AlarmClientModel oldModel = this.model;
-        this.model = model;
-        this.model.notifyAlarmClientModelSelection(ID, oldModel);
     }
 }

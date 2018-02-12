@@ -156,7 +156,7 @@ public class TreeItem implements Serializable
      *  'private' because child items add themself in constructor.
      *  @param child New child item
      */
-    protected final void addChild(final TreeItem child)
+    final private void addChild(final TreeItem child)
     {
         children.add(child);
     }

@@ -9,16 +9,14 @@ package org.csstudio.alarm.beast.ui.areapanel;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 
 import org.csstudio.alarm.beast.client.AlarmTreeItem;
 import org.csstudio.alarm.beast.client.AlarmTreePV;
 import org.csstudio.alarm.beast.client.AlarmTreeRoot;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModel;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelListener;
-import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelSelectionListener;
 
-public class AreaAlarmModel implements AlarmClientModelListener, AlarmClientModelSelectionListener
+public class AreaAlarmModel implements AlarmClientModelListener
 {
     final private AreaAlarmModelListener listener;
     private AlarmClientModel model;
@@ -29,7 +27,6 @@ public class AreaAlarmModel implements AlarmClientModelListener, AlarmClientMode
         this.listener = listener;
         model = AlarmClientModel.getInstance();
         model.addListener(this);
-        model.addAlarmModelSelectionListener(this);
         determinePanelItems();
     }
 
@@ -37,17 +34,15 @@ public class AreaAlarmModel implements AlarmClientModelListener, AlarmClientMode
     @Override
     public void newAlarmConfiguration(final AlarmClientModel model)
     {
-        synchronized (this.model) {
-            determinePanelItems();
-            listener.areaModelChanged();
-        }
+        determinePanelItems();
+        listener.areaModelChanged();
     }
 
     /** Recursively collect items for the panel from model */
     private void determinePanelItems()
     {
         final int panel_level = Preferences.getHierarchyLevel();
-        final List<AlarmTreeItem> items = new ArrayList<>();
+        final List<AlarmTreeItem> items = new ArrayList<AlarmTreeItem>();
         final AlarmTreeRoot root = model.getConfigTree();
         synchronized (root)
         {
@@ -114,11 +109,8 @@ public class AreaAlarmModel implements AlarmClientModelListener, AlarmClientMode
     /** Must be called when model no longer used to release resources */
     public void close()
     {
-        synchronized (model) {
-            model.removeListener(this);
-            model.removeAlarmModelSelectionListener(this);
-            model.release();
-        }
+        model.removeListener(this);
+        model.release();
     }
 
     /** @return <code>true</code> if we received updates from server,
@@ -126,24 +118,6 @@ public class AreaAlarmModel implements AlarmClientModelListener, AlarmClientMode
      */
     public boolean isServerAlive()
     {
-        synchronized (model) {
-            return model.isServerAlive();
-        }
-    }
-
-    @Override
-    public void alarmModelSelection(String id, AlarmClientModel oldModel, AlarmClientModel newModel) {
-        synchronized (model) {
-            Activator.getLogger().log(Level.FINE,
-                    () -> String.format("Model selection change: new=%s, active=%s",
-                            newModel.getConfigurationName(),
-                            model.getConfigurationName()));
-            if (oldModel == null || model == newModel) return;
-            model.removeListener(this);
-            model = newModel;
-            model.addListener(this);
-            determinePanelItems();
-            listener.areaModelChanged();
-        }
+        return model.isServerAlive();
     }
 }

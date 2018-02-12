@@ -7,6 +7,7 @@
  ******************************************************************************/
 package org.csstudio.alarm.beast.ui.alarmtree;
 
+import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModel;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Shell;
@@ -18,27 +19,27 @@ import org.eclipse.swt.widgets.Shell;
 public class InfoAction extends Action
 {
     final private Shell shell;
-    final private ModelProvider modelProvider;
+    final private AlarmClientModel model;
 
-    public InfoAction(final Shell shell, final ModelProvider modelProvider)
+    public InfoAction(final Shell shell, final AlarmClientModel model)
     {
         super("Debug", Activator.getImageDescriptor("icons/information.gif"));
         setToolTipText("Alarm System Info");
         this.shell = shell;
-        this.modelProvider = modelProvider;
+        this.model = model;
     }
 
     @Override
     public void run()
     {
         final StringBuilder info = new StringBuilder();
-        info.append("Configuration: " + modelProvider.getModel().getConfigurationName() + "\n");
-        info.append("JMS Server: " + modelProvider.getModel().getJMSServerInfo() + "\n");
-        info.append("Alarm Server alive: " + modelProvider.getModel().isServerAlive() + "\n");
-        info.append("'Write' allowed: " + modelProvider.getModel().isWriteAllowed() + "\n");
-        info.append("PV Count: " + modelProvider.getModel().getConfigTree().getLeafCount() + "\n");
-        info.append("Active alarms: " + modelProvider.getModel().getActiveAlarms().length + "\n");
-        info.append("Acknowledged alarms: " + modelProvider.getModel().getAcknowledgedAlarms().length + "\n");
+        info.append("Configuration: " + model.getConfigurationName() + "\n");
+        info.append("JMS Server: " + model.getJMSServerInfo() + "\n");
+        info.append("Alarm Server alive: " + model.isServerAlive() + "\n");
+        info.append("'Write' allowed: " + model.isWriteAllowed() + "\n");
+        info.append("PV Count: " + model.getConfigTree().getLeafCount() + "\n");
+        info.append("Active alarms: " + model.getActiveAlarms().length + "\n");
+        info.append("Acknowledged alarms: " + model.getAcknowledgedAlarms().length + "\n");
 
         MessageDialog.openInformation(shell, "Alarm System Information",
                 info.toString());
