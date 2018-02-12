@@ -79,7 +79,7 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
             log.config("beast  datasource: new alarm configuration --- " + model);
             // new model loaded
             parent.loaded.incrementAndGet();
-            if (!parent.compositeModel.equals(model)) parent.compositeModel.addAlarmClientModel(model);
+            parent.compositeModel.addAlarmClientModel(model);
             if (parent.loaded.get() == parent.toLoad.get()) {
                 parent.compositeModel.setAllLoaded(true);
                 log.log(Level.FINE, "All models loaded - notifying Composite model listeners.");
@@ -92,7 +92,6 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
                     channel.reconnect();
                 }
             }
-            notifyCompositeBeastChannelListeners();
         }
 
         @Override
@@ -162,20 +161,6 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
                         if (channel!=null)
                             channel.reconnect(); // will send connection state + current AlarmTreeItem state
                     }
-                }
-            }
-            notifyCompositeBeastChannelListeners();
-        }
-
-        private void notifyCompositeBeastChannelListeners() {
-            synchronized (parent.channelConsumers) {
-                final BeastChannelHandler compositeChannel = (BeastChannelHandler) getChannels()
-                        .get(channelHandlerLookupName(parent.compositeModel.getConfigurationName()));
-                if (compositeChannel != null) {
-                    // there is an actual connection to the composite root
-                    log.fine("Sending message to the composite tree channel.");
-                    parent.compositeModel.getConfigTree().maximizeSeverity();
-                    compositeChannel.accept(parent.compositeModel.getConfigTree());
                 }
             }
         }
