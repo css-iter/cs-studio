@@ -210,13 +210,11 @@ public class AlarmTableWidgetEditPart extends AbstractWidgetEditPart implements 
     public void newAlarmConfiguration(AlarmClientModel model) {
         executeWithDisplay(() -> {
             updateFilter(getAlarmTable());
-            if (!getWidgetModel().isTableHeaderVisible()) {
-                if (!model.isServerAlive() || isItemNull) {
+              if (!model.isServerAlive() || isItemNull) {
                     figure.setBorder(AlarmRepresentationScheme.getDisonnectedBorder());
                 } else {
                     figure.setBorder(calculateBorder());
                 }
-            }
         });
     }
 
