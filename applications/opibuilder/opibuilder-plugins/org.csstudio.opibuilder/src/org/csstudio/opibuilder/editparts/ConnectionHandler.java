@@ -10,7 +10,10 @@ package org.csstudio.opibuilder.editparts;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import org.csstudio.opibuilder.OPIBuilderPlugin;
 import org.csstudio.opibuilder.model.AbstractWidgetModel;
 import org.csstudio.opibuilder.util.AlarmRepresentationScheme;
 import org.csstudio.opibuilder.visualparts.BorderStyle;
@@ -29,8 +32,11 @@ import org.eclipse.swt.widgets.Display;
  *
  */
 public class ConnectionHandler {
+    final private static Logger LOGGER = Logger.getLogger(OPIBuilderPlugin.PLUGIN_ID + ".ConnectionHandler");
 
     private final class PVConnectionListener extends IPVListener.Stub {
+
+
 
         private boolean lastValueIsNull;
 
@@ -132,6 +138,7 @@ public class ConnectionHandler {
             @Override
             public void run() {
                 figure.setBorder(AlarmRepresentationScheme.getDisonnectedBorder());
+                LOGGER.log(Level.FINE, ()->  "Marking widget for pv: " + (pv == null ? "no pv!" : pv.getName()) + " as disconnected");  //$NON-NLS-1$
             }
         });
     }
@@ -156,11 +163,14 @@ public class ConnectionHandler {
             UIBundlingThread.getInstance().addRunnable(display, new Runnable() {
                 @Override
                 public void run() {
-                    if(hasNullValue)
-                        figure.setBorder(
-                                AlarmRepresentationScheme.getInvalidBorder(BorderStyle.DOTTED));
-                    else
+                    if(hasNullValue){
+                        figure.setBorder(AlarmRepresentationScheme.getInvalidBorder(BorderStyle.DOTTED));
+                        LOGGER.log(Level.FINE, ()->  "Marking widget for pv: " + (pv == null ? "no pv!" : pv.getName()) + " as null value");  //$NON-NLS-1$
+                    }
+                    else{
                         figure.setBorder(editPart.calculateBorder());
+                        LOGGER.log(Level.FINE, ()->  "Marking widget for pv: " + (pv == null ? "no pv!" : pv.getName()) + " as connected, value: " + (pv == null ? "no value!" : pv.getValue()));  //$NON-NLS-1$
+                    }
 
                 }
             });
