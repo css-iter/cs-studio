@@ -79,15 +79,22 @@ public class ConfigureItemAction extends Action implements AlarmClientModelSelec
         });
     }
 
+    public void setModel(AlarmClientModel model) {
+        synchronized (this) {
+            this.model = model;
+        }
+    }
 
     @Override
     public void run()
     {
-        if (selection_provider != null)
-            item =
-                (AlarmTreeItem) ((IStructuredSelection)selection_provider.getSelection()).getFirstElement();
-        // else: Fixed item passed into constructor
-        performItemConfiguration(shell, model, item);
+        synchronized (this) {
+            if (selection_provider != null)
+                item =
+                    (AlarmTreeItem) ((IStructuredSelection)selection_provider.getSelection()).getFirstElement();
+            // else: Fixed item passed into constructor
+            performItemConfiguration(shell, model, item);
+        }
     }
 
     /** Interactively configure an item
