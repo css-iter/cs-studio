@@ -8,7 +8,6 @@
 package org.csstudio.alarm.beast.ui.clientmodel;
 
 import java.net.InetAddress;
-import java.sql.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -119,6 +118,7 @@ class AlarmClientCommunicator extends JMSCommunicationWorkQueueThread
         @Override
         protected void timeout()
         {
+            Activator.getLogger().log(Level.WARNING, "JMS Server timeout (notifier not started??) - model: " + model.getConfigurationName());
             model.fireServerTimeout();
         }
     };
@@ -223,7 +223,7 @@ class AlarmClientCommunicator extends JMSCommunicationWorkQueueThread
     {
         final MapMessage map = createMapMessage();
         map.setString(JMSLogMessage.TYPE, JMSAlarmMessage.TYPE_ALARM);
-        map.setString(JMSAlarmMessage.EVENTTIME, date_format.format(Date.from(Instant.now())));
+        map.setString(JMSAlarmMessage.EVENTTIME, date_format.format(java.util.Date.from(Instant.now())));
         map.setString(JMSAlarmMessage.CONFIG, model.getConfigurationName());
         map.setString(JMSLogMessage.TEXT, text);
         map.setString(JMSLogMessage.APPLICATION_ID, APPLICATION);
