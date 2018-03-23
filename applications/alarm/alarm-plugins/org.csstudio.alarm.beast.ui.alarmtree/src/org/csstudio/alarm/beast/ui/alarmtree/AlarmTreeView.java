@@ -92,7 +92,7 @@ public class AlarmTreeView extends ViewPart implements ModelProvider
         }
 
         final Shell shell = parent.getShell();
-        toolbar.add(new InfoAction(shell, this));
+        toolbar.add(new InfoAction(shell, model));
 
         if (model.isWriteAllowed())
         {
@@ -101,7 +101,7 @@ public class AlarmTreeView extends ViewPart implements ModelProvider
             // line when the view is too small.
             // On Linux/GTK, however, buttons vanish at the right edge of the view.
             // Tried SWT.Resize listener with toolbar.update(true), no improvement.
-            toolbar.add(new DebugAction(shell, this));
+            toolbar.add(new DebugAction(shell, model));
             toolbar.add(new ConfigureItemAction(shell, model, gui.getTreeViewer()));
             toolbar.add(new AcknowledgeAction(true, gui.getTreeViewer()));
             toolbar.add(new AcknowledgeAction(false, gui.getTreeViewer()));

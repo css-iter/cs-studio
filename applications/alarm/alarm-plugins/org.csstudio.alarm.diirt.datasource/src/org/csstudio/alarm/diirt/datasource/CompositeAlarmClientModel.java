@@ -126,7 +126,7 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
         if (!models.isEmpty())
             return models.get(0).getJMSServerInfo();
         else
-            return "No Communicator";
+            return "No JMS";
     }
 
     @Override
@@ -137,10 +137,12 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
 
     @Override
     public boolean isServerAlive() {
-        if (!models.isEmpty())
-            return models.get(0).isServerAlive();
-        else
-            return false;
+        synchronized (models) {
+            for (final AlarmClientModel model : models) {
+                if (model.isServerAlive()) return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -275,8 +277,15 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
 
     @Override
     public void acknowledge(final AlarmTreePV pv, final boolean acknowledge) {
-        // Ignored silently since this does not make sense on composite tree
-        LOG.log(Level.FINE, () -> "Acknowledge not supported on Composite Alarm Client Model. pv: " + pv.getPathName() + ", acknowledge: " + acknowledge);
+        synchronized (models) {
+            for (final AlarmClientModel model : models) {
+                if (model.findPV(pv.getName()) != null) {
+                    LOG.log(Level.FINE, () -> String.format("Acknowledge %b on PV %s for model %s.",
+                                            acknowledge, pv.getPathName(), model.getConfigurationName()));
+                    model.acknowledge(pv, acknowledge);
+                }
+            }
+        }
     }
 
     @Override
