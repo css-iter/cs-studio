@@ -297,7 +297,7 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
                 return alarmTreeItem;
             }
         } else {
-            throw new InitializationException("Model hasn't been created yet: " + uri.getPath());
+            throw new Exception("Model hasn't been created yet: " + uri.getPath());
         }
     }
 

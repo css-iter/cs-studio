@@ -119,6 +119,6 @@ public class ConfigureItemAction extends Action implements AlarmClientModelSelec
                         newModel.getConfigurationName(),
                         model.getConfigurationName()));
         if ((id == null && oldModel == null) || model == newModel) return;
-        setModel(newModel);
+        model = newModel;
     }
 }
