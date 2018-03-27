@@ -277,13 +277,11 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
 
     @Override
     public void acknowledge(final AlarmTreePV pv, final boolean acknowledge) {
-        synchronized (models) {
             for (final AlarmClientModel model : models) {
                 if (model.findPV(pv.getName()) != null) {
                     LOG.log(Level.FINE, () -> String.format("Acknowledge %b on PV %s for model %s.",
                                             acknowledge, pv.getPathName(), model.getConfigurationName()));
                     model.acknowledge(pv, acknowledge);
-                }
             }
         }
     }
