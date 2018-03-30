@@ -16,6 +16,7 @@ import java.util.logging.Logger;
 import org.csstudio.alarm.beast.client.AlarmTreePV;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModel;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelListener;
+import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelsCache;
 import org.csstudio.opibuilder.util.AlarmRepresentationScheme;
 import org.csstudio.opibuilder.visualparts.BorderStyle;
 import org.csstudio.simplepv.IPV;
@@ -35,8 +36,7 @@ import org.eclipse.swt.widgets.Display;
  */
 public class ConnectionHandler {
 
-    private static final String BEAST_PREFIX = "beast://";
-    private static final Logger log = Logger.getLogger(ConnectionHandler.class.getName());
+    private final Logger log = Logger.getLogger(ConnectionHandler.class.getName());
 
     // listener for PV connections
     private final class PVConnectionListener extends IPVListener.Stub {
@@ -48,7 +48,6 @@ public class ConnectionHandler {
             if (isBeastChannel) {
                 return;
             }
-
             log.log(Level.FINEST, () -> new String ("Pv " + pv.getName() + " value changed to:" + pv.getValue()));
             if(lastValueIsNull && pv.getValue()!=null){
                 lastValueIsNull = false;
@@ -121,7 +120,7 @@ public class ConnectionHandler {
     private String beastPvName;
     private AlarmClientModel model;
     private BEASTModelListener beastModelListener;
-
+    private AlarmClientModelsCache beastModelsCache;
 
     /**
      * @param editpart the widget editpart to be handled.
@@ -131,6 +130,7 @@ public class ConnectionHandler {
         figure = editpart.getFigure();
         this.display = editpart.getViewer().getControl().getDisplay();
         pvMap = new ConcurrentHashMap<>();
+        beastModelsCache = AlarmClientModelsCache.INSTANCE;
         connected = true;
     }
 
@@ -154,8 +154,8 @@ public class ConnectionHandler {
 
     // check if all PV's are beast DS.
     private void checkForBeastDs(String pvName) {
-        isBeastChannel = isBeastChannel && isPvBeastPV(pvName);
-        log.log(Level.FINE, () -> new String("Pv: " + pvName + "  is beast channel: " + isBeastChannel));
+        isBeastChannel = isBeastChannel && AlarmClientModelsCache.isPvBeastPV(pvName);
+        log.log(Level.FINE, () -> ("Pv: " + pvName + "  is beast channel: " + isBeastChannel));
         if (isBeastChannel) {
             beastPvName = pvName;
             getBeastModel();
@@ -168,7 +168,11 @@ public class ConnectionHandler {
         UIBundlingThread.getInstance().addRunnable(display, new Runnable() {
             @Override
             public void run() {
-                log.log(Level.FINER, () -> new String("Model: " + model.getConfigurationName() + "  is alive: " + model.isServerAlive()));
+                if (model == null){
+                    figure.setBorder(AlarmRepresentationScheme.getDisonnectedBorder());
+                    return;
+                }
+                log.log(Level.FINER, () -> "Model: " + model.getConfigurationName() + "  is alive: " + model.isServerAlive());
                 if (!model.isServerAlive()) {
                     figure.setBorder(AlarmRepresentationScheme.getDisonnectedBorder());
                 } else {
@@ -178,54 +182,46 @@ public class ConnectionHandler {
         });
     }
 
-    private boolean isPvBeastPV(String overridePvName) {
-        if (overridePvName.startsWith(BEAST_PREFIX)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
 
-    //get and add listener to beast model
+    // get and add listener to beast model
     private void getBeastModel() {
         if (model != null) {
-            if (beastModelListener != null){
-            model.removeListener(beastModelListener);
+            if (beastModelListener != null) {
+                model.removeListener(beastModelListener);
             }
             model.release();
             model = null;
         }
         if (model == null) {
             try {
-                model = AlarmClientModel.getInstance(getBeastAlarmChannelName(beastPvName));
+                model = beastModelsCache.getModel(beastPvName);
+                log.log(Level.FINER, () -> "BEAST model for:" + beastPvName + " is " + model);
+                log.log(Level.FINER, () -> "BEAST model " + model + " is alive:" + model.isServerAlive());
+                if (model == null) {
+                    isBeastChannel = false;
+                    return;
+                }
                 beastModelListener = new BEASTModelListener();
                 model.addListener(beastModelListener);
             } catch (Exception e) {
-                log.log(Level.WARNING, () -> new String("No instance of BEAST model:" + beastPvName + "exsist. "));
+                log.log(Level.WARNING, () -> "No instance of BEAST model:" + beastPvName + "exsist. ");
                 return;
             }
         }
-
     }
 
-    //we only need the root of the whole beast path for channel name
-    private String getBeastAlarmChannelName(String pvName) {
-        if (pvName == null || pvName.trim().isEmpty())
-            return null;
-        String channelName = pvName.trim();
-
-        if (channelName.indexOf("://") > 0) {
-            channelName = channelName.substring(channelName.indexOf("://") + 3);
-        }
-        //handle the beast:///
-        if (channelName.startsWith("/"))
-            channelName = channelName.substring(1);
-        if (channelName.contains("/"))
-                channelName = channelName.substring(0, channelName.indexOf("/"));
-
-        log.log(Level.FINE, "Beast channel for pv:  " + pvName + "  is: " + channelName);
-        return channelName;
+    //handle the BEAST tool-tip
+    private void refreshBEASTTooltip(){
+        StringBuilder sb = new StringBuilder();
+        if (model == null || !model.isServerAlive())
+            sb.append(beastPvName + " is disconnected.\n");
+        if(sb.length()>0){
+            sb.append("------------------------------\n");
+            toolTipText = sb.toString();
+        }else
+            toolTipText = "";
     }
+
 
     public void removePV(final String pvName){
         if(pvMap == null){
@@ -234,17 +230,6 @@ public class ConnectionHandler {
         pvMap.remove(pvName);
     }
 
-    //handle the BEAST tool-tip
-    private void refreshBEASTTooltip(){
-        StringBuilder sb = new StringBuilder();
-        if (!model.isServerAlive())
-            sb.append(beastPvName + " is disconnected.\n");
-        if(sb.length()>0){
-            sb.append("------------------------------\n");
-            toolTipText = sb.toString();
-        }else
-            toolTipText = "";
-    }
 
     private void refreshModelTooltip(){
         StringBuilder sb = new StringBuilder();

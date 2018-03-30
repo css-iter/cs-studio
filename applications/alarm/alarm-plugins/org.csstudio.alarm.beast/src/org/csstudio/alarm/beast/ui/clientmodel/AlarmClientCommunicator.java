@@ -118,7 +118,7 @@ class AlarmClientCommunicator extends JMSCommunicationWorkQueueThread
         @Override
         protected void timeout()
         {
-            Activator.getLogger().log(Level.WARNING, "JMS Server timeout (notifier not started??) - model: " + model.getConfigurationName());
+            Activator.getLogger().log(Level.WARNING, "JMS Server timeout - model: " + model.getConfigurationName());
             model.fireServerTimeout();
         }
     };
