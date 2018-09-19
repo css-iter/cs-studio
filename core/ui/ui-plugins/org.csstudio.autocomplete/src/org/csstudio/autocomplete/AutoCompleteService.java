@@ -22,12 +22,13 @@ import org.csstudio.autocomplete.parser.ContentDescriptor;
 import org.csstudio.autocomplete.parser.ContentType;
 import org.csstudio.autocomplete.parser.IContentParser;
 import org.csstudio.autocomplete.preferences.Preferences;
-import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.ui.preferences.ScopedPreferenceStore;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
+
+import org.diirt.datasource.CompositeDataSource;
+import org.diirt.datasource.DataSource;
+import org.diirt.datasource.PVManager;
 
 /**
  * Service which handles content parsing (see {@link IContentParser}) and
@@ -183,12 +184,13 @@ public class AutoCompleteService {
 
         // Useful to handle default data source
         ContentDescriptor desc = new ContentDescriptor();
-        final IPreferenceStore store = new ScopedPreferenceStore(
-                InstanceScope.INSTANCE, "org.csstudio.utility.pv");
-        // Note: "default_type" is a common setting between pv, pv.ui, pvmanager and pvmanager.ui
-        // They need to be kept synchronized.
-        if (store != null)
-            desc.setDefaultDataSource(store.getString("default_type") + "://");
+        DataSource defaultDS = PVManager.getDefaultDataSource();
+        if (defaultDS instanceof CompositeDataSource) {
+            CompositeDataSource composite = (CompositeDataSource) defaultDS;
+            desc.setDefaultDataSource(composite.getConfiguration().getDefaultDataSource()
+                    + composite.getConfiguration().getDelimiter());
+        }
+
         desc.setContentType(ContentType.Undefined);
         desc.setAutoCompleteType(acType);
         desc.setOriginalContent(content);
