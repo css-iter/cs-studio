@@ -11,14 +11,6 @@
             id="org.csstudio.opibuilder.OPIEditor"
             name="OPI Editor">
       </editor>
-      <editor
-            class="org.eclipse.ui.editors.text.TextEditor"
-            default="false"
-            extensions="js"
-            icon="icons/js.gif"
-            id="org.csstudio.opibuilder.jseditor"
-            name="JavaScript Editor">
-      </editor>
    </extension>
    <extension
       point="org.eclipse.ui.perspectives">
