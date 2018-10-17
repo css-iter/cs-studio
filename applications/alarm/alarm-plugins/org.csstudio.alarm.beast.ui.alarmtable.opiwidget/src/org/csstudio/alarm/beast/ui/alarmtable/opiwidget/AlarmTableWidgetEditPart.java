@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010-2016 ITER Organization.
+ * Copyright (c) 2010-2018 ITER Organization.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -178,6 +178,7 @@ public class AlarmTableWidgetEditPart extends AbstractWidgetEditPart implements 
             AlarmTreeRoot root = model.getConfigTree().getRoot();
             AlarmTreeItem item = root.getItemByPath(filterItemPath);
             isItemNull = (item == null) ? true : false;
+            LOGGER.finest(() -> model.getConfigurationName() + ", filterItemPath: " + filterItemPath + ", isItemNull: " + isItemNull);
             if (isItemNull) {
                 executeWithDisplay(() -> figure.setBorder(AlarmRepresentationScheme.getDisonnectedBorder()));
                 getAlarmTable().getActiveAlarmTable().getTable().setEnabled(false);
@@ -210,12 +211,10 @@ public class AlarmTableWidgetEditPart extends AbstractWidgetEditPart implements 
     public void newAlarmConfiguration(AlarmClientModel model) {
         executeWithDisplay(() -> {
             updateFilter(getAlarmTable());
-            if (!getWidgetModel().isTableHeaderVisible()) {
-                if (!model.isServerAlive() || isItemNull) {
-                    figure.setBorder(AlarmRepresentationScheme.getDisonnectedBorder());
-                } else {
-                    figure.setBorder(calculateBorder());
-                }
+            if (!model.isServerAlive() || isItemNull) {
+                figure.setBorder(AlarmRepresentationScheme.getDisonnectedBorder());
+            } else {
+                figure.setBorder(calculateBorder());
             }
         });
     }
