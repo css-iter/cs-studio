@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Iterator;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.csstudio.alarm.beast.Messages;
@@ -247,6 +248,15 @@ public class AlarmTreeItem extends TreeItem
     public AlarmTreeItem getAlarmChild(final int index)
     {
         return alarm_children.get(index);
+    }
+
+    /** Get a thread-safe iterator for the elements of this item 
+     *  which are currently in alarm.
+     *  @return Sub-tree elements in alarm hierarchy
+     */
+    public Iterator<AlarmTreeItem> getAlarmChildrenIterator()
+    {
+        return alarm_children.iterator();
     }
 
     /** @return Current severity */

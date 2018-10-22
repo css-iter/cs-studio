@@ -9,6 +9,7 @@ import org.csstudio.alarm.beast.TimestampHelper;
 import org.csstudio.alarm.beast.client.AlarmTreeItem;
 import org.csstudio.alarm.beast.client.AlarmTreeLeaf;
 import org.csstudio.alarm.beast.client.AlarmTreePV;
+import java.util.Iterator;
 
 
 /**
@@ -89,9 +90,9 @@ public class BeastMessagePayload {
         if (item instanceof AlarmTreePV) {
             count = (item.getSeverity() != SeverityLevel.OK ? 1 : 0);
         } else {
-            int children = item.getAlarmChildCount();
-            for (int i=0; i<children; i++) {
-                count += countAlarmPVs(item.getAlarmChild(i));
+            Iterator<AlarmTreeItem> iter = item.getAlarmChildrenIterator();
+            while (iter.hasNext()) {
+                count += countAlarmPVs(iter.next());
             }
         }
 
