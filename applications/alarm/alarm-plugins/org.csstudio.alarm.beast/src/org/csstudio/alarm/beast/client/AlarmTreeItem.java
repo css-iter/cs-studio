@@ -250,7 +250,7 @@ public class AlarmTreeItem extends TreeItem
         return alarm_children.get(index);
     }
 
-    /** Get a thread-safe iterator for the elements of this item 
+    /** Get a thread-safe iterator for the elements of this item
      *  which are currently in alarm.
      *  @return Sub-tree elements in alarm hierarchy
      */
