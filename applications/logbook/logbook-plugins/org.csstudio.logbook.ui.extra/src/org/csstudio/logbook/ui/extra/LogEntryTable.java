@@ -50,7 +50,7 @@ import org.eclipse.swt.widgets.Menu;
 public class LogEntryTable extends Composite implements ISelectionProvider {
 
     protected final PropertyChangeSupport changeSupport = new PropertyChangeSupport(this);
-    final static private DateTimeFormatter DATE_FORMAT =  TimestampFormats.DATETIMESHORT_FORMAT;
+    final static private DateTimeFormatter SECONDS_FORMAT = TimestampFormats.SECONDS_FORMAT;
 
     public void addPropertyChangeListener(PropertyChangeListener listener) {
         changeSupport.addPropertyChangeListener(listener);
@@ -152,7 +152,7 @@ public class LogEntryTable extends Composite implements ISelectionProvider {
             public void update(ViewerCell cell) {
                 LogEntry item = ((LogEntry) cell.getElement());
                 String date = item == null || item.getCreateDate() == null ? "No Data"
-                        : DATE_FORMAT.format(item.getCreateDate().toInstant());
+                        : SECONDS_FORMAT.format(item.getCreateDate().toInstant());
                 cell.setText(date);
             }
         });

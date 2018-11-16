@@ -58,7 +58,7 @@ import org.eclipse.swt.widgets.Menu;
 public class LogEntryTree extends Composite implements ISelectionProvider {
 
     protected final PropertyChangeSupport changeSupport = new PropertyChangeSupport(this);
-    final static private DateTimeFormatter DATE_FORMAT =  TimestampFormats.DATESHORT_FORMAT;
+    final static private DateTimeFormatter SECONDS_FORMAT = TimestampFormats.SECONDS_FORMAT;
 
     public void addPropertyChangeListener(PropertyChangeListener listener) {
         changeSupport.addPropertyChangeListener(listener);
@@ -156,13 +156,13 @@ public class LogEntryTree extends Composite implements ISelectionProvider {
                 LogEntryTreeModel item = ((LogEntryTreeModel) cell.getElement());
                 StringBuffer date = new StringBuffer();
                 if (item != null) {
-                    date.append(item.logEntry.getCreateDate() == null ? "No Data" : DATE_FORMAT.format(item.logEntry.getCreateDate().toInstant()));
+                    date.append(item.logEntry.getCreateDate() == null ? "No Data" : SECONDS_FORMAT.format(item.logEntry.getCreateDate().toInstant()));
                     if (item.logEntry.getModifiedDate() != null && item.logEntry.getCreateDate().getTime()
                             / 1000 != item.logEntry.getModifiedDate().getTime() / 1000) {
                         date.append(System.getProperty("line.separator"));
                         date.append("modified at:");
                         date.append(System.getProperty("line.separator"));
-                        date.append(DATE_FORMAT.format(item.logEntry.getModifiedDate().toInstant()));
+                        date.append(SECONDS_FORMAT.format(item.logEntry.getModifiedDate().toInstant()));
                     }
                     cell.setText(date.toString());
                 }
