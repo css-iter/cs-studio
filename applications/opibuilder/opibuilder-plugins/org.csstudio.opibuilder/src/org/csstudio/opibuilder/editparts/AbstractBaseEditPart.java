@@ -505,6 +505,14 @@ public abstract class AbstractBaseEditPart extends AbstractGraphicalEditPart imp
                 public void mousePressed(MouseEvent me) {
                     if (me.button != 1)
                         return;
+
+                    // Check location to ignore bogus mouse clicks,
+                    // see https://github.com/ControlSystemStudio/cs-studio/issues/1818
+                    if (! figure.containsPoint(me.getLocation()))
+                    {
+                        return;
+                    }
+
                     for (AbstractWidgetAction action : actions) {
                         if (action instanceof OpenDisplayAction)
                             ((OpenDisplayAction) action).runWithModifiers((me.getState() & SWT.CONTROL) != 0,
