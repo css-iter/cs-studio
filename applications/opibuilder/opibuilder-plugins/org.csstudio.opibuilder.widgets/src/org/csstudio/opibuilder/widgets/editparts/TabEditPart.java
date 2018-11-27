@@ -89,6 +89,13 @@ public class TabEditPart extends AbstractContainerEditpart {
                 TabEditPart.this.removeTab(index);
             }
         });
+
+        // Set inactive tabs as invisible to prevent flashes during creation
+        for(AbstractWidgetModel child: getWidgetModel().getChildren()) {
+            child.setPropertyValue(AbstractWidgetModel.PROP_VISIBLE, child.getIndex()==getWidgetModel().getActiveTab());
+        }
+
+
         super.activate();
 
         UIBundlingThread.getInstance().addRunnable(new Runnable(){
@@ -111,6 +118,7 @@ public class TabEditPart extends AbstractContainerEditpart {
                 getWidgetModel().getChildren().get(index).setPropertyValue(AbstractWidgetModel.PROP_VISIBLE, true);
             }
         });
+
 
     }
 
