@@ -17,6 +17,7 @@ import org.csstudio.alarm.beast.client.AlarmTreePV;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModel;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelListener;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmClientModelsCache;
+import org.csstudio.opibuilder.preferences.PreferencesHelper;
 import org.csstudio.opibuilder.util.AlarmRepresentationScheme;
 import org.csstudio.opibuilder.visualparts.BorderStyle;
 import org.csstudio.simplepv.IPV;
@@ -145,9 +146,10 @@ public class ConnectionHandler {
     public void addPV(final String pvName, final IPV pv) {
         pvMap.put(pvName, pv);
         checkForBeastDs(pvName);
-        markWidgetAsDisconnected(pv);
         if(isBeastChannel){
             checkModelStateAndMarkBorder(model);
+        } else {
+            markWidgetAsDisconnectedFirstTime(pv);
         }
         pv.addListener(new PVConnectionListener());
     }
@@ -265,6 +267,45 @@ public class ConnectionHandler {
             }
         });
     }
+
+    /**
+     * Mark a widget as disconnected the first time.
+     * To avoid Flashes, this method waits a GUIRefreshCycle timeout to let the widget know if its connected or not, and then decide if display the Disconnected border
+     * @param pv
+     */
+    protected void markWidgetAsDisconnectedFirstTime(IPV pv){
+        refreshModelTooltip();
+        if(!connected)
+            return;
+        connected = false;
+
+        // Wait for "opi_gui_refresh_cycle" ms to give time to connect before display Disconnected border
+        new java.util.Timer().schedule(
+                new java.util.TimerTask() {
+                    @Override
+                    public void run() {
+                        // check if we are already connected
+                        if(!connected) {
+                            //Making this task execute in UI Thread
+                            //It will also delay the disconnect marking requested during widget activating
+                            //to execute after widget is fully activated.
+                            UIBundlingThread.getInstance().addRunnable(display, new Runnable(){
+                                @Override
+                                public void run() {
+                                    // re-check if we are already connected
+                                    if(!connected) {
+                                        figure.setBorder(AlarmRepresentationScheme.getDisonnectedBorder());
+                                    }
+                                }
+                            });
+                        }
+                    }
+                },
+                PreferencesHelper.getGUIRefreshCycle()
+        );
+
+    }
+
 
     /**Update the widget when a PV' connection is recovered.
      * @param pvName the name of the PV whose connection is recovered.
