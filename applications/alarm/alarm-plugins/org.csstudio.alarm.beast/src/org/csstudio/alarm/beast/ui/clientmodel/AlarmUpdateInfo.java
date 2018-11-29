@@ -39,7 +39,7 @@ public class AlarmUpdateInfo
     @Deprecated
     public static AlarmUpdateInfo fromMapMessage(final MapMessage message) throws Exception
     {
-        return fromMapMessage(message, new SimpleDateFormat(JMSLogMessage.DATE_FORMAT));
+        return fromMapMessage(message, new SimpleDateFormat(org.csstudio.logging.Preferences.getJMSTimeFormat()));
     }
 
     /** Initialize from JMS MapMessage

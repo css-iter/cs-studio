@@ -24,7 +24,7 @@ import org.csstudio.alarm.beast.notifier.history.PVHistoryEntry;
 import org.csstudio.alarm.beast.notifier.model.IAutomatedAction;
 import org.csstudio.alarm.beast.notifier.rdb.IAlarmRDBHandler;
 import org.csstudio.alarm.beast.notifier.util.NotifierUtils;
-import org.csstudio.logging.JMSLogMessage;
+
 
 /**
  * Main thread for automated actions.
@@ -211,7 +211,7 @@ public class AlarmNotifier {
         final double free = Runtime.getRuntime().freeMemory() / (1024.0 * 1024.0);
         final double total = Runtime.getRuntime().totalMemory() / (1024.0 * 1024.0);
         final double max = Runtime.getRuntime().maxMemory() / (1024.0 * 1024.0);
-        final DateFormat format = new SimpleDateFormat(JMSLogMessage.DATE_FORMAT);
+        final DateFormat format = new SimpleDateFormat(org.csstudio.logging.Preferences.getJMSTimeFormat());
         System.out.format("%s == Alarm Notifier Memory: Max %.2f MB, Free %.2f MB (%.1f %%), total %.2f MB (%.1f %%)\n",
                         format.format(new Date()), max, free, 100.0 * free / max, total, 100.0 * total / max);
 

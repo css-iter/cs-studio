@@ -14,7 +14,6 @@ import java.util.regex.Pattern;
 
 import org.csstudio.alarm.beast.SeverityLevel;
 import org.csstudio.alarm.beast.client.AlarmTreePV;
-import org.csstudio.logging.JMSLogMessage;
 
 /**
  * Snapshot of an {@link AlarmTreePV}.
@@ -25,7 +24,7 @@ import org.csstudio.logging.JMSLogMessage;
 public class PVSnapshot implements Comparable<PVSnapshot> {
 
     /** Parser for received time stamp */
-    final protected static SimpleDateFormat date_format = new SimpleDateFormat(JMSLogMessage.DATE_FORMAT);
+    final protected static SimpleDateFormat date_format = new SimpleDateFormat(org.csstudio.logging.Preferences.getJMSTimeFormat());
 
     /** Pattern for important priority */
     final protected static Pattern IMPPattern = Pattern.compile("^\\ *\\*?\\!.*");

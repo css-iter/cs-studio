@@ -26,7 +26,6 @@ import org.csstudio.alarm.beast.SeverityLevel;
 import org.csstudio.alarm.beast.TreeItem;
 import org.csstudio.alarm.beast.WorkQueue;
 import org.csstudio.apputil.time.BenchmarkTimer;
-import org.csstudio.logging.JMSLogMessage;
 import org.eclipse.osgi.util.NLS;
 
 /** Alarm Server
@@ -236,7 +235,7 @@ public class AlarmServer implements Runnable
         final double total = Runtime.getRuntime().totalMemory() / (1024.0*1024.0);
         final double max = Runtime.getRuntime().maxMemory() / (1024.0*1024.0);
 
-        final DateFormat format = new SimpleDateFormat(JMSLogMessage.DATE_FORMAT);
+        final DateFormat format = new SimpleDateFormat(org.csstudio.logging.Preferences.getJMSTimeFormat());
         out.format("%s == Alarm Server Memory: Max %.2f MB, Free %.2f MB (%.1f %%), total %.2f MB (%.1f %%)\n",
                 format.format(new Date()), max, free, 100.0*free/max, total, 100.0*total/max);
     }

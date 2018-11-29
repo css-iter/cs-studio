@@ -13,8 +13,7 @@ package org.csstudio.logging;
 @SuppressWarnings("nls")
 public interface JMSLogMessage
 {
-    /** Date format for JMS time info */
-    final public static String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSS";
+
 
     /** Default name of the JMS Queue used for log messages.
      *  @see #TYPE_LOG
