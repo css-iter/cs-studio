@@ -219,6 +219,11 @@ public class LinkingContainerEditpart extends AbstractLinkingContainerEditpart{
             getWidgetModel().setDisplayModel(tempDisplayModel);
             try {
                 if (! path.isEmpty())
+                    // Let the tempDisplayModel know if it will have a Parent DisplayModel,
+                    // to allow when filling that is being loaded in a LinkingContainer
+                    if(getParent()!=null && getParent().getModel() instanceof DisplayModel ) {
+                        tempDisplayModel.setParentDisplayModel((DisplayModel) getParent().getModel());
+                    }
                     XMLUtil.fillDisplayModelFromInputStream(
                             ResourceUtil.pathToInputStream(path), tempDisplayModel,
                             getViewer().getControl().getDisplay());
