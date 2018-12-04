@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -100,29 +99,29 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
         // prevent adding null or the model to itself
         if ((child == null) || (child == this)) return;
         synchronized (models) {
-        	// Add child to models only if it is not in the list.
-        	// Notes:
-        	// models is a List implemented with a CopyOnWriteArrayList, which is a thread-safe ArrayList.
-        	// ArrayList means size() and get() are O(1)
-        	// CopyOnWriteArrayList means add() and set() are O(n)
-        	// Thread-safe applies only to each method alone, so synchronized block is needed
+            // Add child to models only if it is not in the list.
+            // Notes:
+            // models is a List implemented with a CopyOnWriteArrayList, which is a thread-safe ArrayList.
+            // ArrayList means size() and get() are O(1)
+            // CopyOnWriteArrayList means add() and set() are O(n)
+            // Thread-safe applies only to each method alone, so synchronized block is needed
             boolean found = false;
             int i = 0;
             int size = models.size();
             while (i < size & !found) {
-            	AlarmClientModel item = models.get(i);
-            	found = (item.getConfigurationName().equals(child.getConfigurationName()));
-            	i++;
+                AlarmClientModel item = models.get(i);
+                found = (item.getConfigurationName().equals(child.getConfigurationName()));
+                i++;
             }
             if (found) {
-            	models.set(i-1, child);
+                models.set(i-1, child);
             }
             else {
-            	models.add(child);
+                models.add(child);
             }
             child.addListener(childrenListener);
             compositeRoot.addAlarmTreeRoot(child.getConfigTree());
-		}
+        }
     }
 
     @Override
