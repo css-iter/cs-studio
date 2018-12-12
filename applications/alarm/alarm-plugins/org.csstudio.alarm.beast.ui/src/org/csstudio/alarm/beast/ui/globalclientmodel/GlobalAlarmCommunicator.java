@@ -21,7 +21,6 @@ import org.csstudio.alarm.beast.JMSCommunicationThread;
 import org.csstudio.alarm.beast.Preferences;
 import org.csstudio.alarm.beast.ui.Activator;
 import org.csstudio.alarm.beast.ui.clientmodel.AlarmUpdateInfo;
-import org.csstudio.logging.JMSLogMessage;
 
 /** JMS communicator that receives 'global' alarm updates
  *  @author Kay Kasemir
@@ -30,7 +29,7 @@ import org.csstudio.logging.JMSLogMessage;
 abstract public class GlobalAlarmCommunicator extends JMSCommunicationThread
 {
     /** The date format for converting the received timestamp info into a Date object */
-    private final DateFormat date_format = new SimpleDateFormat(JMSLogMessage.DATE_FORMAT);
+    private final DateFormat date_format = new SimpleDateFormat(org.csstudio.logging.Preferences.getJMSTimeFormat());
 
     private MessageConsumer consumer;
 

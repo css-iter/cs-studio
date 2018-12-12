@@ -29,7 +29,7 @@ public class JMSAlarmMessage
     final public static String TYPE_ALARM = "alarm";
 
     /** Format of time stamps */
-    private static final DateTimeFormatter date_format = DateTimeFormatter.ofPattern(JMSLogMessage.DATE_FORMAT);
+    private static final DateTimeFormatter date_format = DateTimeFormatter.ofPattern(org.csstudio.logging.Preferences.getJMSTimeFormat());
     private static final ZoneId zone = ZoneId.systemDefault();
 
     /** Mandatory alarm MapMessage element: time of original event */

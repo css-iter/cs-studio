@@ -48,7 +48,7 @@ class AlarmClientCommunicator extends JMSCommunicationWorkQueueThread
     final private static String APPLICATION = "CSS";
 
     /** The date format for converting the received timestamp info into a Date object */
-    private final DateFormat date_format = new SimpleDateFormat(JMSLogMessage.DATE_FORMAT);
+    private final DateFormat date_format = new SimpleDateFormat(org.csstudio.logging.Preferences.getJMSTimeFormat());
 
     /** The model */
     final private AlarmClientModel model;

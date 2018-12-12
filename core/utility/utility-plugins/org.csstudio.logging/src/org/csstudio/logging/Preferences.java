@@ -27,6 +27,8 @@ public class Preferences
     final public static String JMS_LEVEL = "jms_level";
     final public static String JMS_URL = "jms_url";
     final public static String JMS_TOPIC = "jms_topic";
+    final public static String TIME_FORMAT = "time_format";
+
 
     /** @return {@link LogFormatDetail} from preferences or a default
      *  @throws Exception when value cannot be parsed
@@ -164,5 +166,15 @@ public class Preferences
         if (prefs != null)
             jms_topic = prefs.getString(Activator.ID, JMS_TOPIC, jms_topic, null);
         return jms_topic.trim();
+    }
+
+    /** @return JMS TimeFormat from preferences or a default */
+    public static String getJMSTimeFormat()
+    {
+       String jms_timeformat = "yyyy-MM-dd HH:mm:ss.SSS";
+       final IPreferencesService prefs = Platform.getPreferencesService();
+       if (prefs != null)
+           jms_timeformat = prefs.getString(Activator.ID, TIME_FORMAT, jms_timeformat, null);
+           return jms_timeformat.trim();
     }
 }

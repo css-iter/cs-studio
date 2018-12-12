@@ -83,7 +83,7 @@ public class JMSLogWriter implements ExceptionListener
 
     /** Date format for JMS message time info */
     final private static SimpleDateFormat date_format =
-        new SimpleDateFormat(JMSLogMessage.DATE_FORMAT);
+        new SimpleDateFormat(Preferences.getJMSTimeFormat());
 
     /** Initialize
      *  @param application_id Application ID to include in JMS messages

@@ -127,6 +127,12 @@ public class AutomatedActionFactory {
             return null;
         }
         final String scheme = schemeMatcher.group(1);
+
+        // ignore "sevrpv" automated actions, they are delegated to alarm server
+        if(scheme.equals("sevrpv")) {
+            return null;
+        }
+
         // Locate automated action for schema
         final IActionProvider provider = schemeMap.get(scheme);
         if (provider == null) {
