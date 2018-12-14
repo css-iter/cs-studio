@@ -277,9 +277,10 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
     @SuppressWarnings("rawtypes")
     protected void remove(String channelName, Consumer beastChannelHandler) {
         String beastChannel = channelHandlerLookupName(channelName);
-        synchronized (channelConsumers) {
-            if (channelConsumers.containsKey(beastChannel)) {
-                channelConsumers.get(beastChannel).remove(beastChannelHandler);
+        List<Consumer> channel = channelConsumers.get(beastChannel);
+        if (channel != null) {
+            synchronized (channel) {
+                    channel.remove(beastChannelHandler);
             }
         }
     }
