@@ -155,15 +155,14 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
             } else {
                 // The AlarmClientModel has recovered from a disconnection or is notifying us that the first
                 // messages have been received after initial connection.
+                synchronized (parent.channelConsumers) {
                     for (String channelName : parent.channelConsumers.keySet()) {
                         BeastChannelHandler channel = (BeastChannelHandler) getChannels()
                                 .get(channelHandlerLookupName(channelName));
-                        if (channel!=null) {
-                            synchronized (channel) {
-                                channel.reconnect(); // will send connection state + current AlarmTreeItem state
-                            }
-                        }
+                        if (channel!=null)
+                            channel.reconnect(); // will send connection state + current AlarmTreeItem state
                     }
+                }
             }
             notifyCompositeBeastChannelListeners();
         }
@@ -277,10 +276,9 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
     @SuppressWarnings("rawtypes")
     protected void remove(String channelName, Consumer beastChannelHandler) {
         String beastChannel = channelHandlerLookupName(channelName);
-        List<Consumer> channel = channelConsumers.get(beastChannel);
-        if (channel != null) {
-            synchronized (channel) {
-                    channel.remove(beastChannelHandler);
+        synchronized (channelConsumers) {
+            if (channelConsumers.containsKey(beastChannel)) {
+                channelConsumers.get(beastChannel).remove(beastChannelHandler);
             }
         }
     }
