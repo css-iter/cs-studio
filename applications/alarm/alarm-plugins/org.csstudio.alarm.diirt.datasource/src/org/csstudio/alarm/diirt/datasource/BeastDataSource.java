@@ -4,6 +4,8 @@
  */
 package org.csstudio.alarm.diirt.datasource;
 
+import static org.diirt.util.concurrent.Executors.namedPool;
+
 import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -14,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -53,6 +56,8 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
     private AtomicInteger toLoad;
 
     private Executor executor = Executors.newScheduledThreadPool(4);
+
+    private final ExecutorService exec = Executors.newSingleThreadExecutor(namedPool("RemoveChannel " + getClass().getSimpleName() + " Worker "));
 
     private BeastTypeSupport typeSupport;
 
@@ -262,25 +267,35 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
 
     @SuppressWarnings("rawtypes")
     protected void add(String channelName, Consumer beastChannelHandler) {
-        String beastChannel = channelHandlerLookupName(channelName);
-        synchronized (channelConsumers) {
-            List<Consumer> list = channelConsumers.get(beastChannel);
-            if (list == null) {
-                list = new ArrayList<>();
-                channelConsumers.put(beastChannel, list);
+        exec.execute(new Runnable() {
+            @Override
+            public void run() {
+                String beastChannel = channelHandlerLookupName(channelName);
+                synchronized (channelConsumers) {
+                    List<Consumer> list = channelConsumers.get(beastChannel);
+                    if (list == null) {
+                        list = new ArrayList<>();
+                        channelConsumers.put(beastChannel, list);
+                    }
+                    list.add(beastChannelHandler);
+                }
             }
-            list.add(beastChannelHandler);
-        }
+        });
     }
 
     @SuppressWarnings("rawtypes")
     protected void remove(String channelName, Consumer beastChannelHandler) {
-        String beastChannel = channelHandlerLookupName(channelName);
-        synchronized (channelConsumers) {
-            if (channelConsumers.containsKey(beastChannel)) {
-                channelConsumers.get(beastChannel).remove(beastChannelHandler);
+        exec.execute(new Runnable() {
+            @Override
+            public void run() {
+                String beastChannel = channelHandlerLookupName(channelName);
+                synchronized (channelConsumers) {
+                    if (channelConsumers.containsKey(beastChannel)) {
+                        channelConsumers.get(beastChannel).remove(beastChannelHandler);
+                    }
+                }
             }
-        }
+        });
     }
 
     protected AlarmTreeItem getState(String channelName) throws Exception {
