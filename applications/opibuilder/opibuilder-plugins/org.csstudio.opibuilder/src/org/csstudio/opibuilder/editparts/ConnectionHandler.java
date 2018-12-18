@@ -10,6 +10,9 @@ package org.csstudio.opibuilder.editparts;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -268,6 +271,9 @@ public class ConnectionHandler {
         });
     }
 
+    /** Thread executor queue used to mark widgets as disconnected the first time */
+    private static final ScheduledExecutorService queue = Executors.newSingleThreadScheduledExecutor();
+
     /**
      * Mark a widget as disconnected the first time.
      * To avoid Flashes, this method waits a GUIRefreshCycle timeout to let the widget know if its connected or not, and then decide if display the Disconnected border
@@ -279,30 +285,27 @@ public class ConnectionHandler {
             return;
         connected = false;
 
+
         // Wait for "opi_gui_refresh_cycle" ms to give time to connect before display Disconnected border
-        new java.util.Timer().schedule(
-                new java.util.TimerTask() {
-                    @Override
-                    public void run() {
-                        // check if we are already connected
-                        if(!connected) {
-                            //Making this task execute in UI Thread
-                            //It will also delay the disconnect marking requested during widget activating
-                            //to execute after widget is fully activated.
-                            UIBundlingThread.getInstance().addRunnable(display, new Runnable(){
-                                @Override
-                                public void run() {
-                                    // re-check if we are already connected
-                                    if(!connected) {
-                                        figure.setBorder(AlarmRepresentationScheme.getDisonnectedBorder());
-                                    }
-                                }
-                            });
+        queue.schedule(new Runnable() {
+            @Override
+            public void run() {
+                if(!connected) {
+                    //Making this task execute in UI Thread
+                    //It will also delay the disconnect marking requested during widget activating
+                    //to execute after widget is fully activated.
+                    UIBundlingThread.getInstance().addRunnable(display, new Runnable(){
+                        @Override
+                        public void run() {
+                            // re-check if we are already connected
+                            if(!connected) {
+                                figure.setBorder(AlarmRepresentationScheme.getDisonnectedBorder());
+                            }
                         }
-                    }
-                },
-                PreferencesHelper.getGUIRefreshCycle()
-        );
+                    });
+                }
+            }
+        }, PreferencesHelper.getGUIRefreshCycle(), TimeUnit.MILLISECONDS);
 
     }
 
