@@ -233,6 +233,13 @@ public class ConnectionHandler {
             return;
         }
         pvMap.remove(pvName);
+
+        // Remove BeastModelListener that was added when addPV()->checkForBeastDs() -> getBeastModel() is called
+        if (model != null) {
+            if (beastModelListener != null) {
+                model.removeListener(beastModelListener);
+            }
+        }
     }
 
 
