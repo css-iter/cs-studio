@@ -232,6 +232,7 @@ public class AlarmClientModel
             if (default_instance == null) {
                 default_instance = new AlarmClientModel(Preferences.getAlarmTreeRoot(), true, listener);
             }
+            INSTANCES.add(default_instance);
         }
         default_instance.references.incrementAndGet();
         default_instance.notifyAlarmClientModelSelection(null, null);
