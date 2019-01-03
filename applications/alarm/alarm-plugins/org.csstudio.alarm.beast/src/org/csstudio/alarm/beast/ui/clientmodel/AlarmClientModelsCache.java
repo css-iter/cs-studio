@@ -31,9 +31,11 @@ public enum AlarmClientModelsCache {
             defaultModel = AlarmClientModel.getInstance();
             synchronized (defaultModel) {
                 for (String config : defaultModel.getConfigurationNames()) {
-                    final AlarmClientModel modelInst = AlarmClientModel.getInstance(config);
-                    beastModels.put(modelInst.getConfigurationName(), modelInst);
-                    Log.info(() -> "Putting " + modelInst.getConfigurationName() + " to models cache");
+                    if (!config.equals(defaultModel.getConfigurationName())) {
+                        final AlarmClientModel modelInst = AlarmClientModel.getInstance(config);
+                        beastModels.put(modelInst.getConfigurationName(), modelInst);
+                        Log.info(() -> "Putting " + modelInst.getConfigurationName() + " to models cache");
+                    }
                 }
             }
         } catch (Exception e) {
