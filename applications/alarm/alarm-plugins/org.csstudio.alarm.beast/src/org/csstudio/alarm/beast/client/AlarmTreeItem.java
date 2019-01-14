@@ -11,9 +11,10 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
 import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.csstudio.alarm.beast.Messages;
@@ -358,8 +359,17 @@ public class AlarmTreeItem extends TreeItem
             // Maximize latched severity/status
             final SeverityLevel child_sevr = child.getSeverity();
             final int level = child_sevr.ordinal();
-            if (level > 0)
-                alarm_children.add(child);
+            if (level > 0) {
+                boolean found = false;
+                ListIterator<AlarmTreeItem> iter = alarm_children.listIterator();
+                while (!found && iter.hasNext()) {
+                    AlarmTreeItem item = iter.next();
+                    found = (item.getName() == child.getName());
+                }
+                if (!found) {
+                    alarm_children.add(child);
+                }
+            }
             if (level > new_severity.ordinal())
             {
                 new_severity = child_sevr;
