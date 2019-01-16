@@ -422,7 +422,7 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
     public void newAlarmConfiguration(AlarmClientModel model) {
         // initial model loaded
         // store the default model in a list of all models
-        log.log(Level.CONFIG, () -> "Default alarm client model laoded: " + model.getConfigurationName());
+        log.log(Level.CONFIG, () -> "Default alarm client model loaded: " + model.getConfigurationName());
 
         // now obtain all roots from it, and then see if you have anything else in the DIIRT configuration
         final String[] confNames = model.getConfigurationNames();
