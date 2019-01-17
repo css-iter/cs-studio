@@ -293,7 +293,7 @@ public class ConnectionHandler {
         connected = false;
 
 
-        // Wait for "opi_gui_refresh_cycle" ms to give time to connect before display Disconnected border
+        // Wait for "opibuilder_pvmanager_timeout" ms to give time to connect before display Disconnected border
         queue.schedule(new Runnable() {
             @Override
             public void run() {
@@ -312,7 +312,7 @@ public class ConnectionHandler {
                     });
                 }
             }
-        }, PreferencesHelper.getGUIRefreshCycle(), TimeUnit.MILLISECONDS);
+        }, PreferencesHelper.getPVManagerTimeout(), TimeUnit.MILLISECONDS);
 
     }
 

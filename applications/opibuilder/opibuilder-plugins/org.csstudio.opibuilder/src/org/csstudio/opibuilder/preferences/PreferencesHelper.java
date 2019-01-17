@@ -48,6 +48,7 @@ public class PreferencesHelper {
     public static final String RUN_MACROS= "macros"; //$NON-NLS-1$
     public static final String AUTOSAVE= "auto_save"; //$NON-NLS-1$
     public static final String OPI_GUI_REFRESH_CYCLE = "opi_gui_refresh_cycle"; //$NON-NLS-1$
+    public static final String OPIBUILDER_PVMANAGER_TIMEOUT = "opibuilder_pvmanager_timeout"; //$NON-NLS-1$
     public static final String NO_EDIT = "no_edit"; //$NON-NLS-1$
     public static final String TOP_OPIS = "top_opis"; //$NON-NLS-1$
     public static final String DISABLE_ADVANCED_GRAPHICS = "disable_advanced_graphics"; //$NON-NLS-1$
@@ -196,6 +197,11 @@ public class PreferencesHelper {
     public static Integer getGUIRefreshCycle(){
         final IPreferencesService service = Platform.getPreferencesService();
         return service.getInt(OPIBuilderPlugin.PLUGIN_ID, OPI_GUI_REFRESH_CYCLE, 100, null);
+    }
+
+    public static Integer getPVManagerTimeout(){
+        final IPreferencesService service = Platform.getPreferencesService();
+        return service.getInt(OPIBuilderPlugin.PLUGIN_ID, OPIBUILDER_PVMANAGER_TIMEOUT, 100, null);
     }
 
     public static Integer getPulsingAlarmMinorPeriod(){
