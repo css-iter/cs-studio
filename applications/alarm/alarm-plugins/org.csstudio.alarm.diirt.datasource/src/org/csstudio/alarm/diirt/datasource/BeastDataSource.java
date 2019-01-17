@@ -301,7 +301,15 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
     protected AlarmTreeItem getState(String channelName) throws Exception {
         URI uri = URI.create(URLEncoder.encode(BeastTypeSupport.getStrippedChannelName(channelName), "UTF-8"));
         String pvName = uri.getPath().substring(uri.getPath().lastIndexOf("/") + 1);
-        final AlarmClientModel aModel = selectModel(uri);
+        AlarmClientModel aModel = selectModel(uri);
+        int actualRetries = 0;
+        final int maxRetries = 5;
+        while (aModel == null && actualRetries < maxRetries) {
+            log.warning("Waiting for model initialization of " + channelName + " (retrying: " + (actualRetries+1) + " of " + maxRetries + ")");
+            Thread.sleep(1000);
+            aModel = selectModel(uri);
+            actualRetries++;
+        }
         if (aModel != null) {
             AlarmTreePV alarmTreePV = aModel.findPV(pvName);
             if (alarmTreePV != null) {
@@ -318,7 +326,7 @@ public class BeastDataSource extends DataSource implements AlarmClientModelConfi
 
     private AlarmClientModel selectModel(URI uri) throws Exception {
         if (model == null) {
-            log.warning("NO Default model. Abort!");
+            log.warning("No default model.");
             return null;
         }
         final String decodedUri = URLDecoder.decode(uri.getPath(), "UTF-8");
