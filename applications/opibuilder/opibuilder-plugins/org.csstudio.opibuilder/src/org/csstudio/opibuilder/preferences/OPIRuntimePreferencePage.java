@@ -140,8 +140,8 @@ public class OPIRuntimePreferencePage extends FieldEditorPreferencePage
                         "PV Connection Layer", entries, parent);
         addField(pvConnectionLayerEditor);
 
-        IntegerFieldEditor pvManagagerTimeout = new IntegerFieldEditor(PreferencesHelper.OPIBUILDER_PVMANAGER_TIMEOUT, "PVManager timeout", parent);
-        pvManagagerTimeout.setValidRange(10, 5000);
+        IntegerFieldEditor pvManagagerTimeout = new IntegerFieldEditor(PreferencesHelper.OPIBUILDER_PVMANAGER_TIMEOUT, "PVManager timeout (ms)", parent);
+        pvManagagerTimeout.setValidRange(0, 5000);
         pvManagagerTimeout.getTextControl(parent).setToolTipText("Timeout to wait (ms) before displaying widgets as disconnected the first time if no values received");
         addField(pvManagagerTimeout);
 
