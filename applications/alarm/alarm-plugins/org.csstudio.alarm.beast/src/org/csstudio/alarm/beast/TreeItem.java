@@ -184,7 +184,7 @@ public class TreeItem implements Serializable
      *  @param child
      *  @throws Error if child not known
      */
-    private void removeChild(final TreeItem child)
+    protected void removeChild(final TreeItem child)
     {
         if (! children.remove(child))
             throw new Error("Corrupted tree item: " + toString());

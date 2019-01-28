@@ -48,7 +48,7 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
         @Override
         public void newAlarmConfiguration(AlarmClientModel model) {
             LOG.log(Level.FINE, () -> "New config for model " + model.getConfigurationName());
-            parent.compositeNewConfig();
+            parent.compositeNewConfig(model);
         }
 
         @Override
@@ -370,9 +370,21 @@ public class CompositeAlarmClientModel extends AlarmClientModel {
 
     // Inform listeners about overall change to alarm tree configuration:
     //   Items added, removed.
-    private void compositeNewConfig() {
+    private void compositeNewConfig(AlarmClientModel model) {
         if (!configLoopPrevention.compareAndSet(false, true))
             return; // already in the loop
+        //Update composite's child root of model to the actual one, because
+        //model's root has been changed to a new one during alarm configuration.
+        final AlarmTreeRoot modelRoot = model.getConfigTree();
+        final AlarmTreeRoot childRoot = (AlarmTreeRoot)compositeRoot.getChild(model.getConfigurationName());
+        if (childRoot != null) {
+            //Replace the current root using a remove and an add as a transaction.
+            synchronized (compositeRoot) {
+                compositeRoot.removeAlarmTreeRoot(childRoot);
+                compositeRoot.addAlarmTreeRoot(modelRoot);
+            }
+        }
+        //Execute newAlarmConfiguration on all listeners.
         for (final AlarmClientModelListener listener : listeners) {
             try {
                 listener.newAlarmConfiguration(this);

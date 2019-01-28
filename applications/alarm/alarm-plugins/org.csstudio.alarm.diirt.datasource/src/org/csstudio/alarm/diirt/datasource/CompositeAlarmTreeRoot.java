@@ -33,6 +33,11 @@ public class CompositeAlarmTreeRoot extends AlarmTreeRoot {
         addChild(child);
     }
 
+    public synchronized void removeAlarmTreeRoot(AlarmTreeRoot child) {
+      subRoots.remove(child);
+      removeChild(child);
+  }
+
     @Override
     public void addLeavesToList(final List<AlarmTreeLeaf> leaves) {
         synchronized (subRoots) {
