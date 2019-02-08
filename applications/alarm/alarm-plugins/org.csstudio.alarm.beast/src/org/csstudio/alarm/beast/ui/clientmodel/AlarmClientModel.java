@@ -177,6 +177,19 @@ public class AlarmClientModel
      */
     public static AlarmClientModel getInstance(final String config_name, AlarmClientModelConfigListener listener) throws Exception
     {
+
+        // There is a BUG in MultiBEAST initialization process.
+        // This is a hack to force to wait until the composite_instance (CompositeAlarmClientModel) is created,
+        // because the way is done at present cannot be synchronized with attribute INSTANCES due to its visibility.
+        // This hack works together with another hack in CompositeDataSource.retrieveDataSource() method, and isAllLoaded() method in this class.
+        // TODO: This hack will be removed when we can assure a proper initialization process
+        int actualRetries = 0;
+        final int maxRetries = 15;
+        while((composite_instance==null || !composite_instance.isAllLoaded()) && (listener==null || !listener.getClass().getSimpleName().startsWith("Beast")) && actualRetries < maxRetries) {
+            LOG.warning(config_name+" is waiting for composite_instance creation (retrying: " + (actualRetries+1) + " of " + maxRetries + ")");
+            Thread.sleep(1000);
+            actualRetries++;
+        }
         if(config_name == null)
             throw new Exception("Configuration name can't be null");
         AlarmClientModel instance = null;
@@ -192,7 +205,13 @@ public class AlarmClientModel
                     LOG.log(Level.FINEST, () -> "Returning composite model: " + config_name);
                     return composite_instance;
                 }
-                instance = new AlarmClientModel(config_name, false, listener);
+                    // Remainder: We should be able to not create a new AlarmClient if is the same as the default one,
+                    // but something has to be done with the listeners.
+//                if(default_instance!=null && default_instance.getConfigurationName().equals(config_name)) {
+//                    instance = default_instance;
+//                } else {
+                    instance = new AlarmClientModel(config_name, false, listener);
+//                }
                 INSTANCES.add(instance);
             }
         }
@@ -214,6 +233,11 @@ public class AlarmClientModel
     public static AlarmClientModel getInstance() throws Exception
     {
         return getInstance((AlarmClientModelConfigListener) null);
+    }
+
+    // Needed to be able to access CompositeAlarmClientModel
+    public boolean isAllLoaded() {
+        return true;
     }
 
     /**
