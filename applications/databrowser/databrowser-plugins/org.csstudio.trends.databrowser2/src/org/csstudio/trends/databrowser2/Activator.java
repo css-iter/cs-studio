@@ -57,12 +57,15 @@ public class Activator extends AbstractUIPlugin
     {
         super.start(context);
 
-        // Determine width of widest monitor
-        for (Monitor monitor : Display.getCurrent().getMonitors())
+        if (SingleSourcePlugin.getUIHelper().getUI() == UI.RCP)
         {
-            final int wid = monitor.getBounds().width;
-            if (wid > display_pixel_width)
-                display_pixel_width = wid;
+            // Determine width of widest monitor
+            for (Monitor monitor : Display.getCurrent().getMonitors())
+            {
+                final int wid = monitor.getBounds().width;
+                if (wid > display_pixel_width)
+                    display_pixel_width = wid;
+            }
         }
         if (display_pixel_width <= 0)
         {
