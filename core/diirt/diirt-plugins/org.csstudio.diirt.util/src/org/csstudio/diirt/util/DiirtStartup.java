@@ -65,6 +65,9 @@ public class DiirtStartup implements IWorkbenchWindowAdvisorExtPoint {
                     ds.setConfiguration(conf);
                     PVManager.setDefaultDataSource(ds);
 
+                    // Force preload of BeastDatasource to initialize properly the CompositeAlarmClientModel
+                    ds.retrieveDataSource("beast");
+
                 } catch ( Exception e ) {
                     log.severe(e.getMessage());
                 }
