@@ -29,6 +29,16 @@ public class PVWidgetConnectionHandler extends ConnectionHandler{
     @Override
     protected void markWidgetAsDisconnected(IPV pv) {
         super.markWidgetAsDisconnected(pv);
+        disablePVWidget(pv);
+    }
+
+    @Override
+    protected void markWidgetAsDisconnectedFirstTime(IPV pv) {
+        super.markWidgetAsDisconnectedFirstTime(pv);
+        disablePVWidget(pv);
+    }
+
+    private void disablePVWidget(IPV pv) {
         IPVWidgetEditpart pvWidgetEditpart = (IPVWidgetEditpart) editPart;
         final IPV controlPV = pvWidgetEditpart.getControlPV();
         if(controlPV != null && controlPV == pv){
@@ -41,6 +51,7 @@ public class PVWidgetConnectionHandler extends ConnectionHandler{
                     }
                 });
         }
+
     }
 
 //    @Override
