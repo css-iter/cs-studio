@@ -249,7 +249,7 @@ public abstract class AbstractScriptStore implements IScriptStore{
         UIBundlingThread.getInstance().addRunnable(display, new Runnable() {
             @Override
             public void run() {
-                if ((!scriptData.isStopExecuteOnError() || !errorInScript) && !unRegistered) {
+                if ((!scriptData.isStopExecuteOnError() || !errorInScript) && !unRegistered && checkPVsConnected(scriptData, pvArray)) {
                     try {
                         execScript(triggerPV);
                     } catch (Exception e) {
