@@ -12,10 +12,7 @@ import java.io.PrintWriter;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.csstudio.alarm.beast.Messages;
 import org.csstudio.alarm.beast.SeverityLevel;
@@ -45,8 +42,11 @@ public class AlarmTreeItem extends TreeItem
 
     private volatile int disabled_children = 0;
 
-    /** Sub-tree elements of this item which are currently in alarm */
-    final private transient List<AlarmTreeItem> alarm_children = new CopyOnWriteArrayList<>();
+    /** Number of child elements of this item which are currently in alarm */
+    private volatile int alarm_children = 0;
+
+    /** number of active alarms in this item/Sub-tree */
+    private volatile int alarms_count = 0;
 
     // Using arrays for guidance, ..., commands to be thread-safe
 
@@ -239,25 +239,31 @@ public class AlarmTreeItem extends TreeItem
      */
     public int getAlarmChildCount()
     {
-        return alarm_children.size();
+        return alarm_children;
     }
 
     /** Get one of the child elements which are currently in alarm.
      *  @param index Child element index 0 .. (getAlarmChildCount()-1)
      *  @return Sub-item in alarm hierarchy
+     *  @throws ArrayIndexOutOfBoundsException
      */
     public AlarmTreeItem getAlarmChild(final int index)
     {
-        return alarm_children.get(index);
+        int n=-1;
+        for(int i=0; i<this.getChildCount();i++) {
+            if(this.getChild(i).getSeverity().ordinal()>0) {
+                n++;
+            }
+            if(n==index) {
+                return this.getChild(i);
+            }
+        }
+        throw new ArrayIndexOutOfBoundsException("Error getting alarmChild "+index+" of "+this+": current alarm child count:"+this.getAlarmChildCount());
     }
 
-    /** Get a thread-safe iterator for the elements of this item
-     *  which are currently in alarm.
-     *  @return Sub-tree elements in alarm hierarchy
-     */
-    public Iterator<AlarmTreeItem> getAlarmChildrenIterator()
-    {
-        return alarm_children.iterator();
+    /** @return accumulated number of alarms in this item/sub-tree */
+    public int getAlarmsCount() {
+        return alarms_count;
     }
 
     /** @return Current severity */
@@ -336,6 +342,7 @@ public class AlarmTreeItem extends TreeItem
     /** Set severity/status of this item by maximizing over its child
      *  severities.
      *  Recursively updates parent items, so caller must have locked the root.
+     *  Updates alam_children, alarms_count and disabled_children
      *
      *  @return <code>true</code> if the severity of this item or any of its parents changed after
      *          this method is executed, or <code>false</code> if the severity remained the same
@@ -347,12 +354,11 @@ public class AlarmTreeItem extends TreeItem
         SeverityLevel new_current_severity = SeverityLevel.OK;
         SeverityLevel new_severity = SeverityLevel.OK;
         String new_message = SeverityLevel.OK.getDisplayName();
-        alarm_children.clear();
+        alarm_children = 0;
+        alarms_count = 0;
         disabled_children = 0;
-        final int n = getChildCount();
-        for (int i=0; i<n; ++i)
-        {
-            final AlarmTreeItem child = getChild(i);
+        for(Iterator<TreeItem> iter = getChildrenIterator(); iter.hasNext(); ) {
+            final AlarmTreeItem child = (AlarmTreeItem) iter.next();
             // Maximize 'current' severity
             if (child.getCurrentSeverity().ordinal() > new_current_severity.ordinal())
                 new_current_severity = child.getCurrentSeverity();
@@ -360,15 +366,8 @@ public class AlarmTreeItem extends TreeItem
             final SeverityLevel child_sevr = child.getSeverity();
             final int level = child_sevr.ordinal();
             if (level > 0) {
-                boolean found = false;
-                ListIterator<AlarmTreeItem> iter = alarm_children.listIterator();
-                while (!found && iter.hasNext()) {
-                    AlarmTreeItem item = iter.next();
-                    found = (item.getName() == child.getName());
-                }
-                if (!found) {
-                    alarm_children.add(child);
-                }
+                alarms_count += child.getAlarmsCount();
+                alarm_children += 1;
             }
             if (level > new_severity.ordinal())
             {

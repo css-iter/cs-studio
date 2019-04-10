@@ -9,6 +9,7 @@ package org.csstudio.alarm.beast;
 
 import java.io.PrintStream;
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -129,6 +130,15 @@ public class TreeItem implements Serializable
     {
         return children.size();
     }
+
+    /** Get a thread-safe iterator for the children of this item
+     *  @return Sub-tree elements in hierarchy
+     */
+    public Iterator<TreeItem> getChildrenIterator()
+    {
+        return children.iterator();
+    }
+
 
     /** @param index 0 ... <code>getChildCount()-1</code>
      *  @return Child item

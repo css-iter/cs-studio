@@ -103,6 +103,15 @@ public class AlarmTreePV extends AlarmTreeLeaf
         return enabled ? super.getMessage() : SeverityLevel.OK.getDisplayName();
     }
 
+    /** @return 1 if this PV is in Alarm, 0 otherwise */
+    public int getAlarmsCount() {
+        if(this.getSeverity().ordinal()==0)
+            return 0;
+        else
+            return 1;
+    }
+
+
     /** @return <code>true</code> if alarms from PV are enabled */
     public boolean isEnabled()
     {
