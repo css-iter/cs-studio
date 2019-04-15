@@ -4,12 +4,10 @@
  */
 package org.csstudio.alarm.diirt.datasource;
 
-import org.csstudio.alarm.beast.SeverityLevel;
 import org.csstudio.alarm.beast.TimestampHelper;
 import org.csstudio.alarm.beast.client.AlarmTreeItem;
 import org.csstudio.alarm.beast.client.AlarmTreeLeaf;
 import org.csstudio.alarm.beast.client.AlarmTreePV;
-import java.util.Iterator;
 
 
 /**
