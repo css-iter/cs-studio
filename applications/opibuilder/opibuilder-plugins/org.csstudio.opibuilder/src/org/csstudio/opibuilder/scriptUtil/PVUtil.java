@@ -444,4 +444,15 @@ public class PVUtil {
         return new String[] {};
     }
 
+    /**
+     * Try to get the writable access information from the PV
+     *
+     * @param pv
+     *            the PV.
+     * @return true if is write allowed, false if not.
+     */
+    public final static boolean isWriteAllowed(IPV pv) {
+        return pv.isWriteAllowed();
+    }
+
 }
