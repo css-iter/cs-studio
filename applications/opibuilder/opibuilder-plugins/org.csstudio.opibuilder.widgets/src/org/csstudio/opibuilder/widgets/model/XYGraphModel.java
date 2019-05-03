@@ -37,7 +37,7 @@ import org.osgi.framework.Version;
  */
 public class XYGraphModel extends AbstractPVWidgetModel {
 
-
+    public static final int PRIMARY_Y_AXIS_INDEX = 1;
 
     public enum AxisProperty{
         Y_AXIS("y_axis", "Y Axis"),
@@ -56,7 +56,7 @@ public class XYGraphModel extends AbstractPVWidgetModel {
         SHOW_GRID("show_grid", "Show Grid"),
         GRID_COLOR("grid_color", "Grid Color"),
         DASH_GRID("dash_grid_line", "Dash Grid Line"),
-        SCALE_FORMAT("scale_format", "Scale Format");
+        SCALE_FORMAT("scale_format", "Scale Format"), LIMITS_FROM_PV("limits_from_pv", "Limits from PV");
 
         public String propIDPre;
         public String description;
@@ -255,7 +255,7 @@ public class XYGraphModel extends AbstractPVWidgetModel {
             WidgetPropertyCategory category;
             if(i ==0)
                 category = new NameDefinedCategory("Primary X Axis (0)");
-            else if(i == 1)
+            else if (i == PRIMARY_Y_AXIS_INDEX)
                 category = new NameDefinedCategory("Primary Y Axis (1)");
             else
                 category = new NameDefinedCategory("Secondary Axis (" + i + ")");
@@ -295,8 +295,15 @@ public class XYGraphModel extends AbstractPVWidgetModel {
         case AUTO_SCALE_THRESHOLD:
             addProperty(new DoubleProperty(propID, axisProperty.toString(), category,0,  0, 1));
             break;
+        case LIMITS_FROM_PV:
+            BooleanProperty p = new BooleanProperty(propID, axisProperty.toString(), category, false);
+            if (axisIndex != PRIMARY_Y_AXIS_INDEX) {
+                p.setVisibleInPropSheet(false);
+            }
+            addProperty(p);
+            break;
         case LOG:
-            addProperty(new BooleanProperty(propID, axisProperty.toString(), category,false));
+            addProperty(new BooleanProperty(propID, axisProperty.toString(), category, false));
             break;
         case AUTO_SCALE:
         case SHOW_GRID:

@@ -29,7 +29,7 @@ Checkstyle configuration that checks the sun coding conventions.
   <module name="FileTabCharacter">
     <property name="severity" value="error"/>
     <property name="eachLine" value="true"/>
-    <property name="fileExtensions" value="java,xml,product,html,classpath"/>
+    <property name="fileExtensions" value="java,xml,product,html"/>
   </module>
   <module name="RegexpSingleline">
     <metadata name="net.sf.eclipsecs.core.comment" value="To check line do not have trailing spaces"/>
