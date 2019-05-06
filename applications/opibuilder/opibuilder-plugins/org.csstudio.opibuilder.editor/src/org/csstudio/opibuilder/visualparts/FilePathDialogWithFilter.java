@@ -60,10 +60,13 @@ public final class FilePathDialogWithFilter extends Dialog implements Listener {
     private String[] filters;
 
     /**
-     * The path of the selected resource.
+     * The path of the selected resource relative to refPath.
      */
     private IPath path;
 
+    /**
+     * The reference (base) path
+     */
     private IPath refPath;
 
     private Text resourcePathText;
@@ -117,8 +120,14 @@ public final class FilePathDialogWithFilter extends Dialog implements Listener {
      *            the path to the initially selected resource.
      */
     public void setSelectedResource(final IPath path) {
-        this.path = path;
-        relative = !path.isAbsolute();
+    	if (path.isAbsolute()) {
+    		this.path = path.makeRelativeTo(refPath);
+    		relative = false;
+    	}
+    	else {
+    		this.path = path;
+    		relative = true;
+    	}
     }
 
     /**
@@ -176,7 +185,11 @@ public final class FilePathDialogWithFilter extends Dialog implements Listener {
         resourcePathText = new Text(wrapper, SWT.SINGLE | SWT.LEAD | SWT.BORDER);
         resourcePathText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         if (path != null && !path.isEmpty()) {
-            resourcePathText.setText(path.toString());
+        	String pathText = path.toString();
+        	if (!relative) {
+        		pathText = refPath.append(path).toString();
+        	}
+        	resourcePathText.setText(pathText);
             if (!(path instanceof URLPath)) {
                 if (relative) {
                     resourceSelectionGroup.setSelectedResource(refPath.append(path));
@@ -194,13 +207,13 @@ public final class FilePathDialogWithFilter extends Dialog implements Listener {
         checkBox.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                relative = checkBox.getSelection();
-                if (relative && path != null) {
-                    resourcePathText.setText(ResourceUtil.buildRelativePath(
-                            refPath, path).toString());
-                } else {
-                    resourcePathText.setText(path.toString());
+                boolean selected_relative = checkBox.getSelection();
+                String newPathText = path.toString();
+                if (relative && !selected_relative) {
+                	newPathText = refPath.append(path).toString();
                 }
+                resourcePathText.setText(newPathText);
+                relative = selected_relative;
             }
         });
 
@@ -250,15 +263,15 @@ public final class FilePathDialogWithFilter extends Dialog implements Listener {
     @Override
     public void handleEvent(Event event) {
         ResourceSelectionGroup widget = (ResourceSelectionGroup) event.widget;
-        path = widget.getFullPath();
-        if (path == null) {
+        IPath newPath = widget.getFullPath();
+        if (newPath == null) {
             return;
         }
+        path = newPath.makeRelativeTo(refPath);
         if (relative) {
-            resourcePathText.setText(ResourceUtil.buildRelativePath(refPath,
-                    path).toString());
-        } else {
             resourcePathText.setText(path.toString());
+        } else {
+            resourcePathText.setText(refPath.append(path).toString());
         }
         displayOverview(widget.getFullPath());
     }

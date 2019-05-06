@@ -104,7 +104,7 @@ final class WorkspaceResourceContentProvider implements ITreeContentProvider {
      *         <code>false</code> otherwise.
      */
     private boolean includeResource(IResource resource) {
-        if (resource.getType() != IResource.FILE || filters == null) {
+        if (resource.getType() != IResource.FILE || filters == null || filters.length == 0) {
             // non-files are always included
             return true;
         } else {
