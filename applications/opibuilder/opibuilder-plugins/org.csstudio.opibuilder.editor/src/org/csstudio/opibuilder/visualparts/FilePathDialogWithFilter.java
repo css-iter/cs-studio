@@ -120,14 +120,14 @@ public final class FilePathDialogWithFilter extends Dialog implements Listener {
      *            the path to the initially selected resource.
      */
     public void setSelectedResource(final IPath path) {
-    	if (path.isAbsolute()) {
-    		this.path = path.makeRelativeTo(refPath);
-    		relative = false;
-    	}
-    	else {
-    		this.path = path;
-    		relative = true;
-    	}
+        if (path.isAbsolute()) {
+            this.path = path.makeRelativeTo(refPath);
+            relative = false;
+        }
+        else {
+            this.path = path;
+            relative = true;
+        }
     }
 
     /**
@@ -185,11 +185,11 @@ public final class FilePathDialogWithFilter extends Dialog implements Listener {
         resourcePathText = new Text(wrapper, SWT.SINGLE | SWT.LEAD | SWT.BORDER);
         resourcePathText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         if (path != null && !path.isEmpty()) {
-        	String pathText = path.toString();
-        	if (!relative) {
-        		pathText = refPath.append(path).toString();
-        	}
-        	resourcePathText.setText(pathText);
+            String pathText = path.toString();
+            if (!relative) {
+                pathText = refPath.append(path).toString();
+            }
+            resourcePathText.setText(pathText);
             if (!(path instanceof URLPath)) {
                 if (relative) {
                     resourceSelectionGroup.setSelectedResource(refPath.append(path));
@@ -210,7 +210,7 @@ public final class FilePathDialogWithFilter extends Dialog implements Listener {
                 boolean selected_relative = checkBox.getSelection();
                 String newPathText = path.toString();
                 if (relative && !selected_relative) {
-                	newPathText = refPath.append(path).toString();
+                    newPathText = refPath.append(path).toString();
                 }
                 resourcePathText.setText(newPathText);
                 relative = selected_relative;
