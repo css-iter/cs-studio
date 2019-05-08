@@ -143,7 +143,7 @@ public class LinearTicks implements Ticks<Double>
      *  @see #selectNiceStep(double)
      */
     final private static double[] NICE_STEPS = { 10.0, 5.0, 2.0, 1.0 },
-                             NICE_THRESHOLDS = {  6.0, 3.0, 1.2, 0.0 };
+                             NICE_THRESHOLDS = {  6.0, 2.6, 1.2, 0.0 };
 
     /** To a human viewer, tick distances of 5.0 are easier to see
      *  than for example 7.
