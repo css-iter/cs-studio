@@ -636,8 +636,9 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
             if (! axis.isOnRight())
             {
                 final Rectangle axis_region = new Rectangle(total_left_axes_width, title_height, plot_width, y_axis_height);
-                axis.setLabelFont(label_font.getFontData()[0]);
-                axis.setScaleFont(scale_font.getFontData()[0]);
+                // Each YAxis defines its own fonts and should not be overridden with global Plot fonts.
+                //axis.setLabelFont(label_font.getFontData()[0]);
+                //axis.setScaleFont(scale_font.getFontData()[0]);
                 axis_region.width = axis.getDesiredPixelSize(axis_region, gc);
                 axis.setBounds(axis_region);
                 total_left_axes_width += axis_region.width;
@@ -648,8 +649,9 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
             if (axis.isOnRight())
             {
                 final Rectangle axis_region = new Rectangle(total_left_axes_width, title_height, plot_width, y_axis_height);
-                axis.setLabelFont(label_font.getFontData()[0]);
-                axis.setScaleFont(scale_font.getFontData()[0]);
+                // Each YAxis defines its own fonts and should not be overridden with global Plot fonts.
+                //axis.setLabelFont(label_font.getFontData()[0]);
+                //axis.setScaleFont(scale_font.getFontData()[0]);
                 axis_region.width = axis.getDesiredPixelSize(axis_region, gc);
                 total_right_axes_width += axis_region.width;
                 axis_region.x = bounds.width - total_right_axes_width;
