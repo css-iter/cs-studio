@@ -58,6 +58,10 @@ public class AxisConfig
     /** Axis range */
     private double min, max;
 
+    /** Axis Values */
+    private double mean;
+    private int count;
+
     /** Show grid line? */
     private boolean show_grid;
 
@@ -72,7 +76,7 @@ public class AxisConfig
      */
     public AxisConfig(final String name)
     {
-        this(true, name, !Preferences.useTraceNames(), Preferences.useTraceNames(), false, new RGB(0, 0, 0), new FontData("", 10, 0), new FontData("", 10, 0),0.0, 10.0, false, Preferences.useAutoScale(), false);
+        this(true, name, !Preferences.useTraceNames(), Preferences.useTraceNames(), false, new RGB(0, 0, 0), new FontData("", 10, 0), new FontData("", 10, 0),0.0, 10.0, 0.0, 0, false, Preferences.useAutoScale(), false);
     }
 
     /** Initialize
@@ -96,6 +100,8 @@ public class AxisConfig
             final FontData scale_font,
             final double min,
             final double max,
+            final double mean,
+            final int count,
             final boolean show_grid,
             final boolean auto_scale,
             final boolean log_scale)
@@ -110,6 +116,8 @@ public class AxisConfig
         this.scale_font = scale_font;
         this.min = min;
         this.max = max;
+        this.mean = mean;
+        this.count = count;
         this.show_grid = show_grid;
         this.auto_scale = auto_scale;
         this.log_scale = log_scale;
@@ -259,6 +267,26 @@ public class AxisConfig
         fireAxisChangeEvent();
     }
 
+    /** @return Axis sample mean */
+    public double getMean() {
+        return mean;
+    }
+
+    /** @return Axis sample count */
+    public int getCount() {
+        return count;
+    }
+
+    /**
+     * @param Axis sample mean
+     * @param Axis sample count
+     */
+    public void setMeanAndCount(final double mean, final int count) {
+        this.mean = mean;
+        this.count = count;
+        fireAxisChangeEvent();
+    }
+
     /** @return <code>true</code> if grid lines are drawn */
     public boolean isGridVisible()
     {
@@ -356,14 +384,14 @@ public class AxisConfig
         final boolean show_grid = DOMHelper.getSubelementBoolean(node, XMLPersistence.TAG_GRID, false);
         final boolean auto_scale = DOMHelper.getSubelementBoolean(node, XMLPersistence.TAG_AUTO_SCALE, Preferences.useAutoScale());
         final boolean log_scale = DOMHelper.getSubelementBoolean(node, XMLPersistence.TAG_LOG_SCALE, false);
-        return new AxisConfig(visible, name, use_axis_name, use_trace_names, right, rgb, label_font, scale_font, min, max, show_grid, auto_scale, log_scale);
+        return new AxisConfig(visible, name, use_axis_name, use_trace_names, right, rgb, label_font, scale_font, min, max, 0.0, 0, show_grid, auto_scale, log_scale);
     }
 
     /** @return Copied axis configuration. Not associated with a model */
     public AxisConfig copy()
     {
         return new AxisConfig(visible, name, use_axis_name, use_trace_names,
-                              is_right, color, label_font, scale_font, min, max, show_grid, auto_scale, log_scale);
+                              is_right, color, label_font, scale_font, min, max, mean, count, show_grid, auto_scale, log_scale);
     }
 
     /** @return String representation for debugging */

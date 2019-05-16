@@ -110,6 +110,14 @@ public class ModelBasedPlot
             }
 
             @Override
+            public void changedYAxisValues(org.csstudio.swt.rtplot.YAxis<Instant> y_axis) {
+                final int index = plot.getYAxes().indexOf(y_axis);
+                final double mean = y_axis.getMean();
+                final int count = y_axis.getCount();
+                listener.ifPresent((l) -> l.valueAxisValuesChanged(index, mean, count));
+            }
+
+            @Override
             public void changedAnnotations()
             {
                 final List<AnnotationInfo> annotations = new ArrayList<>();

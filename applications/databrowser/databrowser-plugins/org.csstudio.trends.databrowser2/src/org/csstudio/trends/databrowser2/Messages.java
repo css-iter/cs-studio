@@ -61,8 +61,10 @@ public class Messages extends NLS
     public static String AutoScale;
     public static String AxesFontTT;
     public static String Axis;
+    public static String AxisCount;
     public static String AxisLabelFont;
     public static String AxisMax;
+    public static String AxisMean;
     public static String AxisMin;
     public static String AxisEditMinMax;
     public static String AxisOnRight;

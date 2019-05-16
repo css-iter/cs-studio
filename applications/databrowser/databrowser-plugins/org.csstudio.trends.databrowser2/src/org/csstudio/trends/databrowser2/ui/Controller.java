@@ -284,6 +284,15 @@ public class Controller
             }
 
             @Override
+            public void valueAxisValuesChanged(int index, double mean, int count) {
+                final AxisConfig axis = model.getAxis(index);
+                if (axis != null) {
+                    //only update if the model has that axis. If the trend is empty, the model may not have that axis
+                    display.asyncExec(() -> axis.setMeanAndCount(mean, count));
+                }
+            }
+
+            @Override
             public void droppedNames(final String[] names)
             {
                 // Offer potential PV name in dialog so user can edit/cancel

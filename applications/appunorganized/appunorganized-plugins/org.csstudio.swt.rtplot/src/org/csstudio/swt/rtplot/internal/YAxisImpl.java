@@ -70,6 +70,10 @@ public class YAxisImpl<XTYPE extends Comparable<XTYPE>> extends NumericAxis impl
      */
     final private List<TraceImpl<XTYPE>> traces = new CopyOnWriteArrayList<>();
 
+    private double mean;
+
+    private int count;
+
     /** Construct a new Y axis.
      *  <p>
      *  Note that end users will typically <b>not</b> create new Y axes,
@@ -398,5 +402,25 @@ public class YAxisImpl<XTYPE extends Comparable<XTYPE>> extends NumericAxis impl
             gc.setForeground(old_fg);
             ++i;
         }
+    }
+
+    @Override
+    public void setMean(double mean) {
+        this.mean = mean;
+    }
+
+    @Override
+    public double getMean() {
+        return mean;
+    }
+
+    @Override
+    public void setCount(int count) {
+        this.count = count;
+    }
+
+    @Override
+    public int getCount() {
+        return count;
     }
 }

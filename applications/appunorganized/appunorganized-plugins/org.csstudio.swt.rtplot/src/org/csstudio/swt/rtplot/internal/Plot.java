@@ -243,6 +243,7 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
         () ->
         {
             plot_processor.autoscale();
+            plot_processor.calculateDataMeanAndCount();
             updateImageBuffer();
             redrawSafely();
         });
@@ -1275,6 +1276,13 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
     {
         for (RTPlotListener<XTYPE> listener : listeners)
             listener.changedXAxis(x_axis);
+    }
+
+    /** Notify listeners */
+    public void fireYAxisValuesChange(final YAxisImpl<XTYPE> axis)
+    {
+        for (RTPlotListener<XTYPE> listener : listeners)
+            listener.changedYAxisValues(axis);
     }
 
     /** Notify listeners */

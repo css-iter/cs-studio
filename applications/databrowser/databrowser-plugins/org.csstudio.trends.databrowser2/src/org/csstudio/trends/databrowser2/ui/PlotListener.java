@@ -41,6 +41,13 @@ public interface PlotListener
      */
     public void valueAxisChanged(int index, double lower, double upper);
 
+    /** Called the value changed
+     *  @param index Value axis index 0, 1, ...
+     *  @param mean Mean of the plotted sampled data
+     *  @param count Count of plotted sampled data
+     */
+    public void valueAxisValuesChanged(int index, double mean, int count);
+
     /** Received names, presumably for PVs, via drag & drop
      *  @param name PV(?) names
      */

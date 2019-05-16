@@ -459,6 +459,26 @@ public class AxesTableHandler implements IStructuredContentProvider
             }
         });
 
+        // Mean Column --------
+        col = TableHelper.createColumn(table_layout, axes_table, Messages.AxisMean, 70, 50);
+        col.setLabelProvider(new CellLabelProvider() {
+            @Override
+            public void update(final ViewerCell cell) {
+                final AxisConfig axis = (AxisConfig) cell.getElement();
+                cell.setText(Double.toString(axis.getMean()));
+            }
+        });
+
+        // Count Column --------
+        col = TableHelper.createColumn(table_layout, axes_table, Messages.AxisCount, 70, 50);
+        col.setLabelProvider(new CellLabelProvider() {
+            @Override
+            public void update(final ViewerCell cell) {
+                final AxisConfig axis = (AxisConfig) cell.getElement();
+                cell.setText(Integer.toString(axis.getCount()));
+            }
+        });
+
         // Auto scale Column ----------
         col = TableHelper.createColumn(table_layout, axes_table, Messages.AutoScale, 80, 10);
         col.setLabelProvider(new CellLabelProvider()

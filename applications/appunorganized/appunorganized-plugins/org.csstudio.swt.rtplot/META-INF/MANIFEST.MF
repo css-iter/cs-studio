@@ -14,3 +14,4 @@ Export-Package: org.csstudio.swt.rtplot,
  org.csstudio.swt.rtplot.data,
  org.csstudio.swt.rtplot.undo,
  org.csstudio.swt.rtplot.util
+Import-Package: javafx.util;version="2.2.0"

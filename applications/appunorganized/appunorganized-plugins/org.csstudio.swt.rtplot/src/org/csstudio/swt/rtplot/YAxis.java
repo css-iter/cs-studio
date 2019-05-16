@@ -64,4 +64,12 @@ public interface YAxis<XTYPE extends Comparable<XTYPE>> extends Axis<Double>
 
     /** @param right Set <code>true</code> if axis should shown on right instead of left side */
     public void setOnRight(boolean right);
+
+    public void setMean(final double mean);
+
+    public double getMean();
+
+    public void setCount(final int count);
+
+    public int getCount();
 }

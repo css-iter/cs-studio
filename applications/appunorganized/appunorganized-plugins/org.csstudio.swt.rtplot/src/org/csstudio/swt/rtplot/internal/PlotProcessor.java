@@ -431,4 +431,118 @@ public class PlotProcessor<XTYPE extends Comparable<XTYPE>>
             }
         }
     }
+
+    //Maybe calculate only when options tabs is open/visible?
+    /**
+     * Calculates the mean and sample count for all axes in their visible data.
+     */
+    public void calculateDataMeanAndCount() {
+        // Determine mean of each axes' traces in parallel
+        final List<YAxisImpl<XTYPE>> y_axes = new ArrayList<>();
+        final List<Future<MeanAndCount>> axisMeanAndCounts = new ArrayList<Future<MeanAndCount>>();
+        for (YAxisImpl<XTYPE> axis : plot.getYAxes()) {
+            y_axes.add(axis);
+            axisMeanAndCounts.add(determineAxisMeanAndCount(axis, plot.getXAxis()));
+        }
+        final int N = y_axes.size();
+        for (int i=0; i<N; ++i) {
+            final YAxisImpl<XTYPE> axis = y_axes.get(i);
+            try {
+                final MeanAndCount axisMeanAndCount = axisMeanAndCounts.get(i).get();
+                axis.setMean(axisMeanAndCount.mean);
+                axis.setCount(axisMeanAndCount.count);
+                plot.fireYAxisValuesChange(axis);
+            } catch (Exception ex) {
+                Activator.getLogger().log(Level.WARNING, "Axis mean calculation error for " + axis, ex);
+            }
+        }
+    }
+
+    /** Submit background job to determine value mean and count of sampled data
+     *  @param axis {@link YAxisImpl} for which to determine mean and count
+     *  @param x_axis {@link AxisRange} over which range is to be determined
+     *  @return {@link Future} to {@link MeanAndCount}
+     */
+    public Future<MeanAndCount> determineAxisMeanAndCount(final YAxisImpl<XTYPE> axis, final AxisPart<XTYPE> x_axis) {
+        return thread_pool.submit(new Callable<MeanAndCount>()
+        {
+            @Override
+            public MeanAndCount call() throws Exception
+            {
+                // In parallel, determine mean and count of all traces in this axis
+                final List<Future<MeanAndCount>> traceMeansAndCounts = new ArrayList<Future<MeanAndCount>>();
+                for (Trace<XTYPE> trace : axis.getTraces())
+                    traceMeansAndCounts.add(determineTraceMeanAndCount(trace.getData(), x_axis.getValueRange(), axis.getValueRange()));
+
+                // Calculate mean for the axis from its traces
+                MeanAndCount countMean = new MeanAndCount();
+                for (Future<MeanAndCount> result : traceMeansAndCounts)
+                {
+                    if (Double.isFinite(result.get().mean)) {
+                        if (Double.isNaN(countMean.mean)) {
+                            countMean.mean = 0.0;
+                        }
+                        countMean.count += result.get().count;
+                        countMean.mean += result.get().mean;
+                    }
+                }
+                if (Double.isFinite(countMean.mean)) {
+                    countMean.mean = countMean.mean / traceMeansAndCounts.size();
+                }
+
+                return countMean;
+            }
+        });
+    }
+
+    /** Submit background job to determine mean and sample count from the axis traces within the time range
+     *  @param data {@link PlotDataProvider} with values
+     *  @param x_range {@link AxisRange} covering visible part of plot
+     *  @return {@link Future} to {@link MeanAndCount}
+     */
+    public Future<MeanAndCount> determineTraceMeanAndCount(final PlotDataProvider<XTYPE> data, final AxisRange<XTYPE> x_range,
+            final AxisRange<Double> axis_range) {
+        return thread_pool.submit(new Callable<MeanAndCount>() {
+            @Override
+            public MeanAndCount call() throws Exception {
+                double sum = 0;
+                int count = 0;
+                final PlotDataSearch<XTYPE> search = new PlotDataSearch<>();
+                data.getLock().lock();
+                try {
+                    if (data.size() > 0) {
+                        int start = search.findSampleGreaterOrEqual(data, x_range.getLow()); //First axis value in range or nearer
+                        if (start >= 0) {
+                            // Last sample is the one just inside end of range.
+                            int stop = search.findSampleLessOrEqual(data, x_range.getHigh());
+
+                            // Check [start .. stop], including stop to have at least one found value if start = stop
+                            for (int i=start; i<=stop; ++i) {
+                                final PlotDataItem<XTYPE> item = data.get(i);
+                                final double value = item.getValue();
+                                if (Double.isFinite(value) && value >= axis_range.getLow() && value <= axis_range.getHigh()) {
+                                    //Check Y axis range
+                                    count++;
+                                    sum += value;
+                                }
+                            }
+                        }
+                    }
+                } finally {
+                    data.getLock().unlock();
+                }
+                MeanAndCount meanCount = new MeanAndCount();
+                if (count > 0) {
+                    meanCount.count = count;
+                    meanCount.mean = sum / count;
+                }
+                return meanCount;
+            }
+        });
+    }
+
+    private class MeanAndCount {
+        int count = 0;
+        double mean = Double.NaN;
+    }
 }
