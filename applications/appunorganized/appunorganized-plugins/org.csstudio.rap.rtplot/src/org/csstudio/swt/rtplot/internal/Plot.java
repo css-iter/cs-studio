@@ -18,7 +18,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
-
 import org.csstudio.swt.rtplot.Activator;
 import org.csstudio.swt.rtplot.Annotation;
 import org.csstudio.swt.rtplot.AxisRange;
@@ -33,6 +32,7 @@ import org.csstudio.swt.rtplot.undo.ChangeAxisRanges;
 import org.csstudio.swt.rtplot.undo.UndoableActionManager;
 import org.csstudio.swt.rtplot.undo.UpdateAnnotationAction;
 import org.csstudio.swt.rtplot.util.UpdateThrottle;
+import org.eclipse.rap.rwt.service.ServerPushSession;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.events.ControlAdapter;
@@ -240,6 +240,33 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
         addPaintListener(this);
         addMouseListener(this);
         addDisposeListener((final DisposeEvent e) -> handleDisposal());
+
+        final ServerPushSession pushSession = new ServerPushSession();
+        Runnable mousePolling = new Runnable() {
+          public void run() {
+            while (!Plot.this.isDisposed() && !Plot.this.display.isDisposed()) {
+                display.asyncExec( new Runnable() {
+                  public void run() {
+                    if( !Plot.this.isDisposed() && !Plot.this.display.isDisposed()) {
+                        Point cursorLocation = Plot.this.display.getCursorLocation();
+                        Plot.this.clientMouseMove(cursorLocation);
+                    }
+                  }
+                });
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            pushSession.stop();
+          };
+        };
+        pushSession.start();
+        Thread mousePollingThread = new Thread(mousePolling);
+        mousePollingThread.setDaemon( true );
+        mousePollingThread.start();
     }
 
     /** @param listener Listener to add */
@@ -454,7 +481,7 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
         if (annotation instanceof AnnotationImpl)
             annotations.add((AnnotationImpl)annotation);
         else
-            annotations.add(new AnnotationImpl<XTYPE>(annotation.getTrace(), annotation.getPosition(),
+            annotations.add(new AnnotationImpl<XTYPE>(annotation.isInternal(), annotation.getTrace(), annotation.getPosition(),
                                                       annotation.getValue(), annotation.getOffset(),
                                                       annotation.getText()));
         requestUpdate();
@@ -827,8 +854,10 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
     public void mouseDown(final MouseEvent e)
     {
         // Don't start mouse actions when user invokes context menu
-        if (e.button != 1  ||  e.stateMask != 0)
+        if (!(e.button == 1 && (e.stateMask != 0 || (e.stateMask & SWT.BUTTON1) != 0)))
+        {
             return;
+        }
         final Point current = new Point(e.x, e.y);
         mouse_start = mouse_current = Optional.of(current);
 
@@ -921,12 +950,9 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
         }
     }
 
-    /** MouseMoveListener: {@inheritDoc} */
-    @Override
-    public void mouseMove(final MouseEvent e)
+    private void clientMouseMove(Point mousePosition)
     {
-        final Point current = new Point(e.x, e.y);
-        mouse_current = Optional.of(current);
+        mouse_current = Optional.of(mousePosition);
 
         final Point start = mouse_start.orElse(null);
 
@@ -936,32 +962,40 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
             if (anno.getSelection() == AnnotationImpl.Selection.Body)
             {
                 anno.setOffset(
-                        new Point(mouse_annotation_start_offset.x + current.x - start.x,
-                                  mouse_annotation_start_offset.y + current.y - start.y));
+                        new Point(mouse_annotation_start_offset.x + mousePosition.x - start.x,
+                                  mouse_annotation_start_offset.y + mousePosition.y - start.y));
                 requestUpdate();
                 fireAnnotationsChanged();
             }
             else
-                plot_processor.updateAnnotation(anno, x_axis.getValue(current.x));
+                plot_processor.updateAnnotation(anno, x_axis.getValue(mousePosition.x));
         }
         else if (mouse_mode == MouseMode.PAN_X  &&  start != null)
-            x_axis.pan(mouse_start_x_range, x_axis.getValue(start.x), x_axis.getValue(current.x));
+            x_axis.pan(mouse_start_x_range, x_axis.getValue(start.x), x_axis.getValue(mousePosition.x));
         else if (mouse_mode == MouseMode.PAN_Y  &&  start != null)
         {
             final YAxisImpl<XTYPE> axis = y_axes.get(mouse_y_axis);
-            axis.pan(mouse_start_y_ranges.get(mouse_y_axis), axis.getValue(start.y), axis.getValue(current.y));
+            axis.pan(mouse_start_y_ranges.get(mouse_y_axis), axis.getValue(start.y), axis.getValue(mousePosition.y));
         }
         else if (mouse_mode == MouseMode.PAN_PLOT  &&  start != null)
         {
-            x_axis.pan(mouse_start_x_range, x_axis.getValue(start.x), x_axis.getValue(current.x));
+            x_axis.pan(mouse_start_x_range, x_axis.getValue(start.x), x_axis.getValue(mousePosition.x));
             for (int i=0; i<y_axes.size(); ++i)
             {
                 final YAxisImpl<XTYPE> axis = y_axes.get(i);
-                axis.pan(mouse_start_y_ranges.get(i), axis.getValue(start.y), axis.getValue(current.y));
+                axis.pan(mouse_start_y_ranges.get(i), axis.getValue(start.y), axis.getValue(mousePosition.y));
             }
         }
         else
             updateCursor();
+    }
+
+    /** MouseMoveListener: {@inheritDoc} */
+    @Override
+    public void mouseMove(final MouseEvent e)
+    {
+        final Point mousePosition = new Point(e.x, e.y);
+        clientMouseMove(mousePosition);
     }
 
     /** Request update of cursor markers */
