@@ -20,7 +20,7 @@ public class Preferences {
 
     // default preference values
     public static final Level LOG_WRITE_DEFAULT_LEVEL = Level.WARNING;
-    public static final String LOG_WRITE_DEFAULT_MESSAGE_FORMAT = "PV write attempt: {0}, Old value: {1}, New value: {2}";
+    public static final String LOG_WRITE_DEFAULT_MESSAGE_FORMAT = "PV write attempt: {0}, New value: {1}, Old value: {2}";
     public static final String[] LOG_WRITE_DEFAULT_EXCLUDE_PV_PREFIXES = new String[] { "loc://", "sim://" };
 
     /**
