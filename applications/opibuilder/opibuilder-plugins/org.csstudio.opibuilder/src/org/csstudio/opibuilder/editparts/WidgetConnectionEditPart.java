@@ -378,27 +378,25 @@ public class WidgetConnectionEditPart extends AbstractConnectionEditPart {
             intersections.addPoint(x1y1);
             ArrayList<Point> intersectionPointsList = new ArrayList<Point>();
 
-            // line is horizontal
-            if(y1-y2 == 0) {
-                // Property is not set to horizontal. Skip
-                if(! (widgetModel.getLineJumpAdd().equals(LineJumpAdd.HORIZONTAL_LINES))) {
-                    continue;
-                }
-            }
-            // line is vertical
-            if(x1-x2 == 0) {
-                // Property is not set to vertical. Skip
-                if(! (widgetModel.getLineJumpAdd().equals(LineJumpAdd.VERTICAL_LINES))) {
-                    continue;
-                }
-            }
-            // skip for slanting lines
-            if(x1-x2 != 0 && y1-y2 != 0) {
-                continue;
-            }
-
             for (ConnectionModel connModel : connectionList) {
                 if(connModel != getModel()) {
+
+                    if (y1-y2 == 0) {
+                        // line segment is horizontal, but neither connection has the property set to horizontal
+                        if ((widgetModel.getLineJumpAdd() != LineJumpAdd.HORIZONTAL_LINES) && (connModel.getLineJumpAdd() != LineJumpAdd.HORIZONTAL_LINES)) {
+                            continue;
+                        }
+                    } else if (x1-x2 == 0) {
+                        // line segment is vertical, but neither connection has the property set to vertical
+                        if ((widgetModel.getLineJumpAdd() != LineJumpAdd.VERTICAL_LINES) && (connModel.getLineJumpAdd() != LineJumpAdd.VERTICAL_LINES)) {
+                            continue;
+                        }
+                    } else {
+                        // skip for slanting lines
+                        continue;
+                    }
+
+                    // this is some other connection, not this one
                     WidgetConnectionEditPart widgetConnectionEditPart = (WidgetConnectionEditPart) getViewer().getEditPartRegistry().get(connModel);
                     if(widgetConnectionEditPart == null) {
                         continue;
@@ -418,6 +416,8 @@ public class WidgetConnectionEditPart extends AbstractConnectionEditPart {
                         // Edge Case: Check if lines are parallel
                         if((x1 -x2)*(y3 - y4)-(y1 - y2)*(x3 - x4) != 0) {
                             // Calculate intersection point https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
+                            // This calculates an intersection point between 2 lines that carry the (x1y1,x2y2) and
+                            // (x3y3, x4y4) segments. But the intersection may be somewhere outside those two segments.
                             double itx = (x1*y2 - y1*x2)*(x3 - x4) - (x1-x2)*(x3*y4 - y3*x4);
                             itx = itx/( ((x1-x2)*(y3-y4)) - ((y1-y2)*(x3-x4)) );
 
