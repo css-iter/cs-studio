@@ -45,7 +45,7 @@ public class TracePainter<XTYPE extends Comparable<XTYPE>>
      *  Strictly speaking, we'd have to compute the intersection of
      *  lines with the clip region, but this is much easier to implement.
      */
-    final private static int OUTSIDE = 1000;
+    final private static int OUTSIDE = 0;
     private int x_min, x_max, y_min, y_max;
 
     final private int clipX(final double x)

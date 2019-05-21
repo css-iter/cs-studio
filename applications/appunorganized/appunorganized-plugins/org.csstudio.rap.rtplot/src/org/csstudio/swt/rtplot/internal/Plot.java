@@ -244,12 +244,11 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
         final ServerPushSession pushSession = new ServerPushSession();
         Runnable mousePolling = new Runnable() {
           public void run() {
-            while (!Plot.this.isDisposed() && !Plot.this.display.isDisposed()) {
+            while (!Plot.this.isDisposed() && !Plot.this.getDisplay().isDisposed()) {
                 display.asyncExec( new Runnable() {
                   public void run() {
-                    if( !Plot.this.isDisposed() && !Plot.this.display.isDisposed()) {
-                        Point cursorLocation = Plot.this.display.getCursorLocation();
-                        Plot.this.clientMouseMove(cursorLocation);
+                    if( !Plot.this.isDisposed() && !Plot.this.getDisplay().isDisposed()) {
+                        Plot.this.clientMouseMove(getCursorLocation());
                     }
                   }
                 });
@@ -654,7 +653,6 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
             y_axis.paint(gc, media, plot_bounds);
         }
 
-        gc.setClipping(plot_bounds);
         plot_area.paint(gc, media);
 
         for (YAxisImpl<XTYPE> y_axis : y_axes)
@@ -858,7 +856,7 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
         {
             return;
         }
-        final Point current = new Point(e.x, e.y);
+        final Point current = getCursorLocation();
         mouse_start = mouse_current = Optional.of(current);
 
         if (selectMouseAnnotation())
@@ -994,7 +992,7 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
     @Override
     public void mouseMove(final MouseEvent e)
     {
-        final Point mousePosition = new Point(e.x, e.y);
+        final Point mousePosition = getCursorLocation();
         clientMouseMove(mousePosition);
     }
 
@@ -1187,4 +1185,11 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
         for (RTPlotListener<XTYPE> listener : listeners)
             listener.changedToolbar(show);
     }
+
+    private Point getCursorLocation() {
+        Point cursorLocation = Display.getCurrent().getCursorLocation();
+        Point relativeCursorLocation = Display.getCurrent().getFocusControl().toControl(cursorLocation);
+        return relativeCursorLocation;
+    }
+
 }
