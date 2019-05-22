@@ -18,4 +18,10 @@ public interface AuthIDs
 
     /** ID used for changes to the alarm configuration */
     public static final String CONFIGURE = "alarm_config";
+
+    /** ID used for changes to the alarm configuration */
+    public static final String DISABLE = "alarm_disable";
+
+    /** ID used for changes to the alarm configuration */
+    public static final String MAINTENANCE = "alarm_maintenance";
 }

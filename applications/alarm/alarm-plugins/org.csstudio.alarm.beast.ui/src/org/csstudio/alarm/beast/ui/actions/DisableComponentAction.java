@@ -52,7 +52,7 @@ public class DisableComponentAction extends Action
         items.toArray(this.items);
 
         // authorization
-        SecuritySupportUI.registerAction(this, AuthIDs.CONFIGURE);
+        SecuritySupportUI.registerAction(this, AuthIDs.DISABLE);
     }
 
     protected boolean doEnable()

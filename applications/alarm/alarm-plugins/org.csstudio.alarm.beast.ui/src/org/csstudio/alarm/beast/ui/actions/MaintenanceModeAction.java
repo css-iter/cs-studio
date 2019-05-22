@@ -43,7 +43,7 @@ public class MaintenanceModeAction extends Action implements AlarmClientModelLis
         getIcons();
 
         //authorization
-        SecuritySupportUI.registerAction(this, AuthIDs.CONFIGURE);
+        SecuritySupportUI.registerAction(this, AuthIDs.MAINTENANCE);
 
         model.addAlarmModelSelectionListener(this);
         setModel(model);
