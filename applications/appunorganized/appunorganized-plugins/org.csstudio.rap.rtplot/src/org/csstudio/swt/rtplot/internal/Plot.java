@@ -18,6 +18,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
+
 import org.csstudio.swt.rtplot.Activator;
 import org.csstudio.swt.rtplot.Annotation;
 import org.csstudio.swt.rtplot.AxisRange;
@@ -243,10 +244,12 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
 
         final ServerPushSession pushSession = new ServerPushSession();
         Runnable mousePolling = new Runnable() {
-          public void run() {
+          @Override
+        public void run() {
             while (!Plot.this.isDisposed() && !Plot.this.getDisplay().isDisposed()) {
                 display.asyncExec( new Runnable() {
-                  public void run() {
+                  @Override
+                public void run() {
                     if( !Plot.this.isDisposed() && !Plot.this.getDisplay().isDisposed()) {
                         Plot.this.clientMouseMove(getCursorLocation());
                     }
@@ -1188,7 +1191,7 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
 
     private Point getCursorLocation() {
         Point cursorLocation = Display.getCurrent().getCursorLocation();
-        Point relativeCursorLocation = Display.getCurrent().getFocusControl().toControl(cursorLocation);
+        Point relativeCursorLocation = this.toControl(cursorLocation);
         return relativeCursorLocation;
     }
 
