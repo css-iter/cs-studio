@@ -262,7 +262,6 @@ public class Plot<XTYPE extends Comparable<XTYPE>> extends Canvas implements Pai
                     break;
                 }
             }
-            pushSession.stop();
           };
         };
         pushSession.start();
