@@ -48,9 +48,9 @@ public class AnnotationImpl<XTYPE extends Comparable<XTYPE>> extends Annotation<
     private Optional<Rectangle> screen_box = Optional.empty();
 
     /** Constructor */
-    public AnnotationImpl(final Trace<XTYPE> trace, final XTYPE position, final double value, final Point offset, final String text)
+    public AnnotationImpl(final boolean internal, final Trace<XTYPE> trace, final XTYPE position, final double value, final Point offset, final String text)
     {
-        super(trace, position, value, offset, text);
+        super(internal, trace, position, value, offset, text);
     }
 
     /** Set to new location

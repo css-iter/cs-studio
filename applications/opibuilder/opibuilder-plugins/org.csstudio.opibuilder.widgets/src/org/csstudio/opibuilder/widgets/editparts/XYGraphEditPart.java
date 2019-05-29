@@ -172,7 +172,9 @@ public class XYGraphEditPart extends AbstractPVWidgetEditPart {
     }
 
     protected void refreshSetRange() {
-        ((ToolbarArmedXYGraph) getFigure()).getXYGraph().primaryYAxis.setRange(pv_lopr, pv_hopr);
+        if (pv_lopr != null && pv_hopr != null) {
+            ((ToolbarArmedXYGraph) getFigure()).getXYGraph().primaryYAxis.setRange(pv_lopr, pv_hopr);
+        }
     }
 
     @Override

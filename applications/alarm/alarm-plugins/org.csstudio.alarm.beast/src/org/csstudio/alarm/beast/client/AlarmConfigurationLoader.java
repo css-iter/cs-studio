@@ -29,6 +29,8 @@ public class AlarmConfigurationLoader
     /** Maximum title length when loading older config files */
     private static final int MAX_TITLE = 100;
 
+    private static final int DEFAULT_DELAY_VALUE = 0;
+
     final private AlarmConfiguration config;
 
     /** Initialize
@@ -240,7 +242,7 @@ public class AlarmConfigurationLoader
         while (aaNode != null) {
             String title = DOMHelper.getSubelementString(aaNode, XMLTags.TITLE);
             String details = DOMHelper.getSubelementString(aaNode, XMLTags.DETAILS);
-            Integer delay = DOMHelper.getSubelementInt(aaNode, XMLTags.DELAY);
+            Integer delay = DOMHelper.getSubelementInt(aaNode, XMLTags.DELAY, DEFAULT_DELAY_VALUE);
             aaList.add(new AADataStructure(title, details, delay));
             aaNode = DOMHelper.findNextElementNode(aaNode, name);
         }
