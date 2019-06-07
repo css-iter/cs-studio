@@ -21,6 +21,7 @@ import org.csstudio.trends.databrowser2.preferences.Preferences;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.RGB;
+import org.eclipse.wb.swt.SWTResourceManager;
 import org.w3c.dom.Element;
 
 /** Information about configuration of an axis
@@ -76,7 +77,11 @@ public class AxisConfig
      */
     public AxisConfig(final String name)
     {
-        this(true, name, !Preferences.useTraceNames(), Preferences.useTraceNames(), false, new RGB(0, 0, 0), new FontData("", 10, 0), new FontData("", 10, 0),0.0, 10.0, 0.0, 0, false, Preferences.useAutoScale(), false);
+        this(true, name, !Preferences.useTraceNames(), Preferences.useTraceNames(), false, new RGB(0, 0, 0), SWTResourceManager.getSystemFontData(), SWTResourceManager.getSystemFontData(),0.0, 10.0, 0.0, 0, false, Preferences.useAutoScale(), false);
+    }
+
+    public AxisConfig(final String name, final FontData label_font, final FontData scale_font) {
+        this(true, name, !Preferences.useTraceNames(), Preferences.useTraceNames(), false, new RGB(0, 0, 0), label_font, scale_font,0.0, 10.0, 0.0, 0, false, Preferences.useAutoScale(), false);
     }
 
     /** Initialize

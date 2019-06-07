@@ -395,6 +395,30 @@ public class SWTResourceManager {
         }
         m_fontToBoldFontMap.clear();
     }
+    /**
+     * Returns the system default Font
+     *
+     * @return the system default Font
+     */
+    public static Font getSystemFont() {
+        return Display.getCurrent().getSystemFont();
+    }
+    /**
+     * Returns the FontData for the system default Font
+     *
+     * @return the FontData of the system default Font
+     */
+    public static FontData getSystemFontData() {
+        FontData systemFontData;
+        FontData[] systemFontDatum = getSystemFont().getFontData();
+        if (systemFontDatum.length == 0) {
+            systemFontData = null;
+        }
+        else {
+            systemFontData = systemFontDatum[0];
+        }
+        return systemFontData;
+    }
     ////////////////////////////////////////////////////////////////////////////
     //
     // Cursor

@@ -19,8 +19,8 @@ import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.csstudio.apputil.macros.IMacroTableProvider;
 import org.csstudio.apputil.macros.InfiniteLoopException;
@@ -41,6 +41,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.wb.swt.SWTResourceManager;
 
 /** Data Browser model
  *  <p>
@@ -145,7 +146,7 @@ public class Model
         final Display display = Display.getCurrent();
         if (display != null)
         {   // Based on system font, use BOLD for labels, and smaller version for scales
-            final FontData default_font = display.getSystemFont().getFontData()[0];
+            final FontData default_font = SWTResourceManager.getSystemFontData();
             title_font = new FontData(default_font.getName(), (default_font.getHeight()*3)/2, SWT.BOLD);
             label_font = new FontData(default_font.getName(), default_font.getHeight(), SWT.BOLD);
             scale_font = new FontData(default_font.getName(), default_font.getHeight()-1, SWT.NORMAL);
@@ -322,7 +323,7 @@ public class Model
             }
         }
         final String name = NLS.bind(Messages.Plot_ValueAxisNameFMT, max_default_axis_num + 1);
-        final AxisConfig axis = new AxisConfig(name);
+        final AxisConfig axis = new AxisConfig(name, label_font, scale_font);
         axis.setColor(new RGB(0, 0, 0));
         addAxis(axis);
         return axis;
