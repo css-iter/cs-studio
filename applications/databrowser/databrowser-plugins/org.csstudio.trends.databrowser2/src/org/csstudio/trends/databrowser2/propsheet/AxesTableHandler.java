@@ -64,12 +64,16 @@ public class AxesTableHandler implements IStructuredContentProvider
         @Override
         public void changedAxis(final Optional<AxisConfig> axis)
         {
-            if (axis.isPresent())
-                axes_table.refresh(axis.get());
-            else
-            {   // Force total refresh
-                getModelAxisCopy(model);
-                axes_table.refresh();
+            // Wait until the user finishes editing the AxisConfig
+            if (!axes_table.isCellEditorActive())
+            {
+                if (axis.isPresent())
+                    axes_table.refresh(axis.get());
+                else
+                {   // Force total refresh
+                    getModelAxisCopy(model);
+                    axes_table.refresh();
+                }
             }
         }
     };
